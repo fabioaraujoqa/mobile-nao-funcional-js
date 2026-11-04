@@ -63,7 +63,7 @@ class Guardian:
                              ("stay_on_while_plugged", "settings get global stay_on_while_plugged_in")):
                 info[key] = self.adb.shell(cmd).strip()
             hb = self.col.heartbeat()
-            keyguard = parsers.parse_keyguard(self.adb.shell("dumpsys window | grep -E 'isKeyguardShowing|mShowingLockscreen'"))
+            keyguard = parsers.parse_keyguard(self.adb.shell("dumpsys window | grep -E 'isKeyguardShowing|mShowingLockscreen' || true"))
             battery = parsers.parse_battery(self.adb.shell("dumpsys battery"))
         except AdbError as exc:
             raise Abort("adb", f"celular não responde no adb: {exc}") from exc

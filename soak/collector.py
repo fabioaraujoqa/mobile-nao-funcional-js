@@ -74,13 +74,13 @@ class Collector:
     # ------------------------------------------------------------ verificação rápida
     def heartbeat(self) -> dict:
         """Estado mínimo para o guardião (barato: ~2 comandos). Lança AdbError se offline."""
-        pid = parsers.parse_pidof(self.adb.shell(f"pidof {self.package}"))
-        screen = parsers.parse_screen_on(self.adb.shell("dumpsys power | grep -E 'mWakefulness=|Display Power'"))
+        pid = parsers.parse_pidof(self.adb.shell(f"pidof {self.package} || true"))
+        screen = parsers.parse_screen_on(self.adb.shell("dumpsys power | grep -E 'mWakefulness=|Display Power' || true"))
         return {"pid": pid, "app_alive": pid is not None, "screen_on": screen}
 
     def foreground(self) -> Optional[str]:
         return parsers.parse_resumed_package(
-            self.adb.shell("dumpsys activity activities | grep -E 'ResumedActivity'")
+            self.adb.shell("dumpsys activity activities | grep -E 'ResumedActivity' || true")
         )
 
     # ------------------------------------------------------------ amostra completa

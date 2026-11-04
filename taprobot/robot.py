@@ -104,12 +104,12 @@ class RobotTap:
         return dist / (feed / 60.0) + 0.05  # +50 ms de aceleração
 
     def _xy_dist(self, x, y):
-        if self._pos is None:
+        if self._pos is None or self._pos[0] is None:
             return 250.0  # desconhecido: estima o pior caso
         return math.hypot(x - self._pos[0], y - self._pos[1])
 
     def _z_dist(self, z):
-        if self._pos is None:
+        if self._pos is None or self._pos[2] is None:
             return 60.0
         return abs(z - self._pos[2])
 

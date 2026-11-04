@@ -11,6 +11,7 @@ ${CAMPO_NUM1}       id=com.browserstack.addnumber:id/num1
 ${CAMPO_NUM2}       id=com.browserstack.addnumber:id/num2
 ${BOTAO_ADD}        id=com.browserstack.addnumber:id/addBtn
 ${RESULTADO}        id=com.browserstack.addnumber:id/sampleLabel
+${AVISO_APP_ANTIGO_OK}    id=android:id/button1
 
 
 *** Keywords ***
@@ -18,6 +19,16 @@ Abrir o AddNumber
     Iniciar sessão com robô
     ...    appium:appPackage=com.browserstack.addnumber
     ...    appium:appActivity=.MainActivity
+    Fechar aviso de app antigo
+    Wait Until Element Is Visible    ${BOTAO_ADD}    10s
+
+Fechar aviso de app antigo
+    [Documentation]    O Android 15 abre um aviso por cima de apps com SDK antigo, e ele fica
+    ...                na tela mesmo depois de o app fechar, atrapalhando a próxima suíte.
+    ...                Fechado por software: é preparação do teste, não o toque testado.
+    ${apareceu}=    Run Keyword And Return Status
+    ...    Wait Until Element Is Visible    ${AVISO_APP_ANTIGO_OK}    3s
+    IF    ${apareceu}    Click Element    ${AVISO_APP_ANTIGO_OK}
 
 Somar
     [Documentation]    A digitação é por software (Appium); só o toque no ADD é físico.

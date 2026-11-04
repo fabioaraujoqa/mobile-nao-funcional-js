@@ -14,9 +14,9 @@ P1S → ponteira toca a tela
 
 > **Status:** a lógica (conversão, limites de segurança, geração de G-code, parser do
 > `getevent`, soak) tem testes automáticos que passam. **Testado no hardware:** conexão
-> MQTT com a P1S, homing, movimento e desenho com caneta no papel; Appium no Moto G06 pelo
-> Wi-Fi (ainda com os testes em JS). **Ainda não testado:** os testes Robot com a tela
-> desbloqueada, toque na tela com a ponteira, calibração e soak real.
+> MQTT com a P1S, homing, movimento e desenho com caneta no papel; testes Robot no Moto G06
+> pelo USB (por software e com o robô simulado). **Ainda não testado:** toque na tela com a
+> ponteira, calibração no hardware e soak real.
 > Faça o primeiro uso com calma, seguindo [docs/montagem.md](docs/montagem.md).
 
 ## Começo rápido

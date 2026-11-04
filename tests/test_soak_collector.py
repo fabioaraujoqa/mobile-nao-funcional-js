@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from soak import parsers
-from taprobot.adb import AdbError
+from taprobot.adb import AdbClient, AdbError
 from soak.collector import COLUMNS, Collector, EventLog
 from soak.fake import FakeAdb
 
@@ -185,3 +185,25 @@ def test_logcat_em_segundo_plano_registra_crash(setup):
         time.sleep(0.05)
     col.stop()
     assert [e["type"] for e in got] == ["crash", "process_died"]
+
+
+# ---------------------------------------------------------------- adb de verdade (executável falso)
+@pytest.fixture
+def adb_que_repassa_o_codigo(tmp_path):
+    """Como o adb real: repassa o código do comando. `pidof` e `grep` sem resultado saem com 1."""
+    script = tmp_path / "adb"
+    script.write_text('#!/bin/sh\ncase "$*" in *"|| true"*) exit 0;; *) exit 1;; esac\n', encoding="utf-8")
+    script.chmod(0o755)
+    return AdbClient("x", str(script))
+
+
+def test_app_fechado_nao_parece_adb_fora_do_ar(tmp_path, adb_que_repassa_o_codigo):
+    clock = Clock()
+    events = EventLog(tmp_path / "events.jsonl", clock, clock.t, echo=None)
+    col = Collector(adb_que_repassa_o_codigo, PKG, tmp_path, events, clock=clock, t0=clock.t)
+    assert col.heartbeat()["app_alive"] is False
+
+
+def test_comando_que_falha_no_adb_continua_sendo_erro(adb_que_repassa_o_codigo):
+    with pytest.raises(AdbError):
+        adb_que_repassa_o_codigo.shell("pidof nada")

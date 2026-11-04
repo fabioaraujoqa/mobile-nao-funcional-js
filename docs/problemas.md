@@ -21,6 +21,7 @@
 | "conexão recusada" | access code (muda ao reiniciar o Modo LAN) |
 | "sem confirmação da impressora" | firmware pode ter mudado o protocolo ou exigir Modo Desenvolvedor; confira o tópico/formato `gcode_line` na documentação da comunidade para a sua versão |
 | Robot: nenhum elemento encontrado | tela bloqueada ou apagada no celular; desbloqueie antes de rodar |
+| Robot: um app abre, mas os elementos dele não aparecem | algum diálogo do sistema por cima (ex.: o aviso de app antigo do Android 15, que continua aberto depois que o app fecha e cobre o app seguinte) |
 | Robot: celular não encontrado | Depuração por Wi-Fi desligada (ao trocar de rede ela desliga) ou computador em outra rede |
 | Nenhum touchscreen encontrado | `adb devices`, autorizar depuração USB; alguns aparelhos restringem `getevent` |
 | Toque não detectado na descida | ponteira fora da tela, sem aterramento, borracha pouco condutiva, `z_floor` alto |

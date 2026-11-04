@@ -9,7 +9,7 @@ Ordem para o primeiro uso: preparar a P1S, montar a mecânica, ler a segurança 
 2. Copie `config.example.yaml` para `config.yaml` e preencha. Não versione esse arquivo.
 3. `pip install -r requirements.txt`
 4. `python -m tools.test_connection --latency`: conecta, envia um comando inofensivo e mede o
-   tempo de resposta. Se aparecer "sem ack", o formato do comando pode ter mudado no
+   tempo de resposta. Se aparecer "sem confirmação", o formato do comando pode ter mudado no
    seu firmware (veja [problemas.md](problemas.md)).
 
 ## 2. Mecânica

@@ -102,6 +102,4 @@ ideia for implementada, deve ser reescrita aqui.
 2. Adicionar ao projeto o gabarito do celular que for usado, e testar o encaixe.
 3. Definir `motion.z_floor` no `config.yaml` (hoje vazio) e rodar `python -m tools.calibrate run`.
 4. Confirmar as coordenadas dos cenários de exemplo com `python -m soak ui`.
-5. Rodar `robot -d results robot/tests` com o celular desbloqueado (a migração para o Robot
-   só foi testada até abrir a sessão: o celular estava bloqueado).
-6. Primeiro soak real: 10 min, acompanhando de perto.
+5. Primeiro soak real: 10 min, acompanhando de perto.

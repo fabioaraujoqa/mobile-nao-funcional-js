@@ -109,9 +109,11 @@ class BambuLink:
 
     # ------------------------------------------------------------------ envio
     def send_gcode(self, gcode: str, wait_ack: bool = True):
-        """Envia uma ou mais linhas de G-code. Devolve a resposta da impressora (ou None).
+        """Envia uma ou mais linhas de G-code e devolve a resposta da impressora.
 
-        O ack só confirma que o comando foi ACEITO, não que o movimento terminou.
+        Sem resposta a tempo, lança BambuError: o gesto pode não ter acontecido, e seguir
+        em frente faria o teste falhar depois por um motivo enganoso. Com wait_ack=False,
+        devolve None. O ack só confirma que o comando foi ACEITO, não que o movimento terminou.
         """
         if self._client is None:
             raise BambuError("não conectado")
@@ -140,8 +142,7 @@ class BambuLink:
             self._pending.pop(seq, None)
             result = self._results.pop(seq, None)
         if not got:
-            log.warning("sem confirmação da impressora para o comando %s", seq)
-            return None
+            raise BambuError(f"sem confirmação da impressora para o comando {seq} em {self.ack_timeout} s")
         status = str(result.get("result", "success")).lower()
         if status not in ("success", "ok"):
             raise BambuError(f"impressora recusou o G-code: {result}")

@@ -33,7 +33,10 @@ class AdbClient:
     def shell(self, *args: str, timeout: float = 20) -> str:
         """Roda um comando no celular: shell("dumpsys battery") ou shell("wm", "size").
 
-        Saída vazia não é erro (ex.: pidof sem processo).
+        Código de saída diferente de zero vira AdbError, porque o adb repassa o código do
+        comando e um celular fora do ar também sai com erro. Em comandos que podem não achar
+        nada de forma legítima (pidof, grep), termine com `|| true`: assim, erro só significa
+        problema no adb.
         """
         return self._run(["shell", *args], timeout)
 

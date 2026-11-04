@@ -8,7 +8,7 @@ import statistics
 import sys
 import time
 
-from taprobot import BambuLink, load_config
+from taprobot import BambuError, BambuLink, load_config
 
 
 def main():
@@ -25,8 +25,12 @@ def main():
     link.connect()
     print("Conectado ao broker MQTT da P1S.")
 
-    res = link.send_gcode("G90")
-    print("Resposta ao G90:", res if res else "(sem ack: veja o aviso acima; o formato pode ter mudado no firmware)")
+    try:
+        res = link.send_gcode("G90")
+    except BambuError as exc:
+        link.close()
+        sys.exit(f"{exc}\nO formato do comando pode ter mudado no firmware (veja docs/problemas.md).")
+    print("Resposta ao G90:", res)
 
     if args.latency:
         times = []

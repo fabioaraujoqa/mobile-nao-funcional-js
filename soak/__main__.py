@@ -34,26 +34,6 @@ ATENÇÃO: a impressora vai se mover sozinha durante todo o teste.
 """
 
 
-class RobotLinkError(RuntimeError):
-    pass
-
-
-class AckLink:
-    """Envolve o BambuLink: comando sem confirmação vira erro (o guardião conta e aborta)."""
-
-    def __init__(self, inner):
-        self.inner = inner
-
-    def send_gcode(self, gcode, wait_ack=True):
-        r = self.inner.send_gcode(gcode, wait_ack=wait_ack)
-        if wait_ack and r is None:
-            raise RobotLinkError("a impressora não confirmou o comando (MQTT caiu?)")
-        return r
-
-    def close(self):
-        self.inner.close()
-
-
 class TouchProbe:
     """Verificação de calibração real: toca e lê o pixel sentido pelo celular (getevent)."""
 
@@ -129,7 +109,7 @@ def cmd_run(args) -> int:
         p = cfg["printer"]
         link = BambuLink(p["ip"], p["serial"], p["access_code"])
         link.connect()
-        robot = RobotTap(cfg, AckLink(link), Calibration.load(cal_path))
+        robot = RobotTap(cfg, link, Calibration.load(cal_path))
         if sc.calibration_check:
             probe = TouchProbe(serial, cfg["adb"]["path"])
         else:
