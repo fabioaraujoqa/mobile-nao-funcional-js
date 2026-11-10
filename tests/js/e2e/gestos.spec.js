@@ -1,3 +1,4 @@
+const assert = require("node:assert/strict");
 const { ApiDemosPage } = require("../pages/apidemos");
 describe("Gestos [e2e]", () => {
   let page;
@@ -19,5 +20,6 @@ describe("Gestos [e2e]", () => {
   it("Arrastar um ponto até outro", async () => {
     await page.openDragAndDrop();
     await page.dragDot(1, 2);
+    assert.equal(await page.dropResult(), "Dropped!");
   });
 });

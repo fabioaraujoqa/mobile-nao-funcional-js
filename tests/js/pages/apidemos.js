@@ -29,5 +29,14 @@ class ApiDemosPage {
   async dragDot(from, to) {
     await this.gestures.drag(id(`drag_dot_${from}`), id(`drag_dot_${to}`));
   }
+  /** Texto que o app mostra depois de soltar um ponto sobre outro. */
+  async dropResult() {
+    const el = await this.driver.$(id("drag_result_text"));
+    await this.driver.waitUntil(async () => (await el.getText()) !== "", {
+      timeout: 5000,
+      timeoutMsg: "O app não registrou a soltura do ponto",
+    });
+    return el.getText();
+  }
 }
 module.exports = { ApiDemosPage };

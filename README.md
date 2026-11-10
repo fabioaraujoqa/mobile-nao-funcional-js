@@ -57,6 +57,8 @@ calibração antes.
 | Manual passo a passo: rede/Modo LAN, caneta no cabeçote, até a calibração | [docs/manual-p1s.md](docs/manual-p1s.md) |
 | Preparar a P1S, montar a ponteira, regras de segurança e calibrar (resumo) | [docs/montagem.md](docs/montagem.md) |
 | Escrever e rodar testes Appium (Robot Framework) com toque físico | [docs/testes-robot.md](docs/testes-robot.md) |
+| Testes WebdriverIO: instalação, arquitetura e execução | [docs/testes-js.md](docs/testes-js.md) |
+| O que a suíte cobre dos 12 tipos de teste mobile, e o que falta | [docs/cobertura.md](docs/cobertura.md) |
 | Teste de resistência (soak) e de consumo de bateria | [docs/soak.md](docs/soak.md) |
 | Limitações e solução de problemas | [docs/problemas.md](docs/problemas.md) |
 | Por que o projeto é assim, aprendizados no hardware e pendências | [docs/decisoes.md](docs/decisoes.md) |
