@@ -19,11 +19,13 @@ from pathlib import Path
 
 import numpy as np
 
-from taprobot import BambuLink, Calibration, RobotTap, load_config
+from taprobot import BambuLink, Calibration, RobotTap, fit_plane, load_config
 from taprobot.adb import AdbClient
 from taprobot.touch_reader import TouchReader, find_touch_device, get_wm_size
 
 EXPECTED_PX_PER_MM = 10.25  # Moto G06: ~720 px / 70,25 mm de largura útil
+PROBE_START_MM = 1.5  # na grade, a busca do contato começa este tanto acima do contato do centro
+PROBE_LIFT_MM = 1.5  # quanto a ponteira sobe entre as batidas da busca do Z de contato
 
 INTRO = """
 CHECKLIST DE SEGURANÇA
@@ -62,7 +64,7 @@ def open_session(cfg, with_cal):
     except Exception as exc:  # noqa: BLE001
         w, h = cfg["screen"]["width_px"], cfg["screen"]["height_px"]
         print(f"Aviso: não li o tamanho da tela via adb ({exc}); usando {w}x{h} do config.")
-    dev = find_touch_device(adb)
+    dev = find_touch_device(adb, cfg["adb"].get("touch_device"))
     print(f"Touchscreen: {dev['name']} ({dev['path']}), raw máx {dev['max_x']}x{dev['max_y']}; tela {w}x{h}")
     reader = TouchReader(adb, dev, w, h)
     reader.start()
@@ -117,11 +119,12 @@ def jog(robot, reader):
         print("posição (X, Y, Z): %.2f, %.2f, %.2f" % robot.pos, "  [celular sentindo toque]" if reader.in_contact else "")
 
 
-def auto_descend(robot, reader, step):
+def auto_descend(robot, reader, step, verbose=True):
     floor = robot.m["z_floor"]
     z = robot.pos[2]
     downs = reader.down_count
-    print(f"Descendo de {z:.2f} em passos de {step} mm até o celular sentir o toque (limite {floor})...")
+    if verbose:
+        print(f"Descendo de {z:.2f} em passos de {step} mm até o celular sentir o toque (limite {floor})...")
     while True:
         z -= step
         if z < floor:
@@ -130,10 +133,14 @@ def auto_descend(robot, reader, step):
                 "ponteira sem contato elétrico (tente aterrar a espuma/borracha condutiva), "
                 "ou z_floor alto demais."
             )
-        robot.move_abs(z=z, feed=robot.m["feed_z_touch"])
-        time.sleep(0.15)
+        # Bate em vez de encostar devagar: a tela (ILITEK do Moto G06) absorve no "fundo"
+        # um objeto que chega aos poucos e nunca registra o toque. Cada tentativa sobe
+        # PROBE_LIFT_MM e desce de uma vez até o novo z, como um toque normal.
+        robot.move_abs(z=z, feed=robot.m["feed_z"])
+        time.sleep(0.25)
         if reader.down_count > downs:
             return z
+        robot.move_abs(z=z + PROBE_LIFT_MM, feed=robot.m["feed_z"])
 
 
 def tap_and_read(robot, reader, x, y):
@@ -179,22 +186,20 @@ def cmd_run(args):
         print("PASSO 1: posicione a ponteira sobre a tela.")
         jog(robot, reader)
 
-        n0 = len(reader.contacts)
         zc = auto_descend(robot, reader, args.z_step)
         x0, y0, _ = robot.pos
         robot.move_abs(z=zc + 3.0)
-        q0 = reader.wait_contact(n0)
-        if q0 is None:
-            raise RuntimeError("o celular não concluiu o toque inicial (ele foi detectado mas não liberado?)")
         robot.set_z_contact(zc)
-        print(f"PASSO 2: Z de contato = {zc:.2f} mm; primeiro toque em ({q0[0]:.0f}, {q0[1]:.0f}) px")
+        print(f"PASSO 2: Z de contato = {zc:.2f} mm")
 
-        mm_pts, px_pts = [(x0, y0)], [q0]
+        # O toque da busca de Z não serve de origem: o kernel só manda X/Y quando mudam,
+        # então um toque no mesmo ponto do último (até de outra sessão) chega sem
+        # coordenada. As sondagens vêm antes, e a origem é tocada por último.
         print("PASSO 3: toques de sondagem para descobrir orientação e escala...")
-        for dx, dy in ((10.0, 0.0), (0.0, 10.0)):
-            q = tap_and_read(robot, reader, x0 + dx, y0 + dy)
-            mm_pts.append((x0 + dx, y0 + dy))
-            px_pts.append(q)
+        probes = [(x0 + 10.0, y0), (x0, y0 + 10.0), (x0, y0)]
+        q1, q2, q0 = (tap_and_read(robot, reader, x, y) for x, y in probes)
+        print(f"  origem em ({q0[0]:.0f}, {q0[1]:.0f}) px")
+        mm_pts, px_pts = [probes[2], probes[0], probes[1]], [q0, q1, q2]
 
         d1 = (np.array(px_pts[1]) - np.array(px_pts[0])) / 10.0
         d2 = (np.array(px_pts[2]) - np.array(px_pts[0])) / 10.0
@@ -209,20 +214,41 @@ def cmd_run(args):
         p0 = np.array([x0, y0])
         q0a = np.array(px_pts[0])
 
-        print("PASSO 4: grade 3x3 sobre a tela...")
+        print("PASSO 4: grade 3x3 sobre a tela (com o contato medido em cada ponto)...")
+        z_pts = [(x0, y0, zc)]
         for fy in (0.08, 0.5, 0.92):
             for fx in (0.12, 0.5, 0.88):
                 target = np.array([fx * W, fy * H])
                 p = p0 + Jinv @ (target - q0a)
+                X, Y = float(p[0]), float(p[1])
+                # Acha o contato em cada ponto: o celular pode estar inclinado no gabarito.
+                n = len(reader.contacts)
                 try:
-                    q = tap_and_read(robot, reader, float(p[0]), float(p[1]))
+                    robot.move_abs(z=zc + PROBE_START_MM)
+                    robot.move_abs(x=X, y=Y)
                 except ValueError as exc:
                     raise RuntimeError(f"ponto da grade fora dos limites do robô: {exc}") from exc
-                mm_pts.append((float(p[0]), float(p[1])))
+                try:
+                    zi = auto_descend(robot, reader, args.z_step, verbose=False)
+                except RuntimeError as exc:
+                    raise RuntimeError(f"no ponto X={X:.1f} Y={Y:.1f} mm: {exc}") from exc
+                robot.move_abs(z=zi + 3.0)
+                q = reader.wait_contact(n)
+                if q is None:
+                    raise RuntimeError(f"o toque em X={X:.1f} Y={Y:.1f} mm não chegou com coordenada")
+                mm_pts.append((X, Y))
                 px_pts.append(q)
-                print(f"  alvo ({target[0]:.0f},{target[1]:.0f}) px -> leu ({q[0]:.0f},{q[1]:.0f}) px")
+                z_pts.append((X, Y, zi))
+                print(f"  alvo ({target[0]:.0f},{target[1]:.0f}) px -> leu ({q[0]:.0f},{q[1]:.0f}) px, contato Z={zi:.2f}")
 
-        cal = Calibration.from_pairs(px_pts, mm_pts, zc, W, H)
+        plane, plane_res = fit_plane(z_pts)
+        z_lo = min(z for *_, z in z_pts)
+        print(f"Inclinação da tela: {plane[1] * 100:+.2f} mm a cada 100 mm em X, {plane[2] * 100:+.2f} em Y "
+              f"(resíduo do plano {plane_res:.2f} mm; contato mais baixo Z={z_lo:.2f})")
+        if z_lo - robot.m["press_mm"] < robot.m["z_floor"]:
+            print(f"AVISO: no ponto mais baixo o toque iria abaixo do z_floor ({robot.m['z_floor']}); "
+                  f"baixe o z_floor para ~{z_lo - 1.0:.1f} ou nivele o celular.")
+        cal = Calibration.from_pairs(px_pts, mm_pts, zc, W, H, z_plane=plane)
         cal.save(cal_path)
         robot.set_calibration(cal)
         print(f"\nCalibração salva em {cal_path}")

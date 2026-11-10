@@ -22,7 +22,7 @@ class DeviceNotFound(RuntimeError):
 
 
 def _adb(*args, adb="adb", timeout=15) -> str:
-    res = subprocess.run([adb, *args], capture_output=True, text=True, timeout=timeout)
+    res = subprocess.run([adb, *args], stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=timeout)
     return res.stdout
 
 

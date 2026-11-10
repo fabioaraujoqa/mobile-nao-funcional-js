@@ -60,7 +60,7 @@ class TapRobotLibrary:
         adb_path = cfg["adb"]["path"]
         adb = AdbClient(udid or cfg["adb"]["serial"] or resolve_udid(adb=adb_path), adb_path)
         width, height = get_wm_size(adb)
-        reader = TouchReader(adb, find_touch_device(adb), width, height)
+        reader = TouchReader(adb, find_touch_device(adb, cfg["adb"].get("touch_device")), width, height)
         p = cfg["printer"]
         link = BambuLink(p["ip"], p["serial"], p["access_code"])
         link.connect()

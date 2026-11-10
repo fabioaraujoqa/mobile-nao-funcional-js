@@ -59,14 +59,14 @@ robot -d results -v APPIUM_URL:http://127.0.0.1:4725 -v UDID:emulator-5554 -i em
 
 - **Limites:** ficam em `resources/nfr_limites.py` e são provisórios até uma rodada de referência.
   Qualquer um pode ser trocado na linha de comando, como `-v SOAK_MB_POR_HORA_MAX:15`.
-- **CSV:** cada teste grava em `results/nfr/<tipo>_<data-hora>.csv`, linha a linha, então os dados
-  sobrevivem se o teste cair no meio.
+- **CSV:** cada teste grava em `<pasta do -d>/nfr/<tipo>_<data-hora>.csv`, linha a linha, então os
+  dados sobrevivem se o teste cair no meio. Use um `-d` por ambiente, como `results/g06`.
 
 ## Gráficos
 
 ```bash
 pip install -e .[graficos]
-python $NFR/scripts/gerar_graficos.py     # PNGs em results/nfr/graficos/
+python $NFR/scripts/gerar_graficos.py --entrada results/g06/nfr --saida results/g06/graficos
 ```
 
 Gera memória, p95 da latência e bateria, a partir do CSV mais recente de cada tipo.
@@ -75,5 +75,7 @@ Gera memória, p95 da latência e bateria, a partir do CSV mais recente de cada 
 
 - **Rede e GPS:** o ApiDemos não usa rede nem tem tela de GPS. Os testes 06 e 09 mostram que o
   app sobrevive às mudanças, não que ele reage bem a elas.
+- **Falhas conhecidas:** `05_sensores` e `08_camera` têm um caso cada que falha por crash real do
+  ApiDemos. Essas falhas são o resultado esperado com este app.
 - **Soak curto:** poucos minutos não indicam vazamento. A inclinação só diz algo em rodadas longas.
 - **Bateria:** se o aparelho carregar durante o teste, o resultado é SKIP, não aprovação.

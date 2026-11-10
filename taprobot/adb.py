@@ -20,7 +20,7 @@ class AdbClient:
 
     def _run(self, args, timeout, text=True):
         try:
-            res = subprocess.run(self.base + args, capture_output=True, text=text, timeout=timeout)
+            res = subprocess.run(self.base + args, stdin=subprocess.DEVNULL, capture_output=True, text=text, timeout=timeout)
         except subprocess.TimeoutExpired as exc:
             raise AdbError(f"adb {' '.join(args[:3])}: sem resposta em {timeout}s") from exc
         except OSError as exc:
@@ -47,6 +47,7 @@ class AdbClient:
         """Linhas novas do logcat (main, system e crash) a partir de agora."""
         self._logcat = subprocess.Popen(
             self.base + ["logcat", "-v", "threadtime", "-b", "main,system,crash", "-T", "1"],
+            stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
             text=True,

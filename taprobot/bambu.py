@@ -148,6 +148,21 @@ class BambuLink:
             raise BambuError(f"impressora recusou o G-code: {result}")
         return result
 
+    def set_light(self, on: bool):
+        """Liga/desliga a luz da câmara (LED da câmera). Não espera confirmação."""
+        if self._client is None:
+            raise BambuError("não conectado")
+        with self._lock:
+            self._seq += 1
+            seq = str(self._seq)
+        payload = {"system": {
+            "sequence_id": seq, "command": "ledctrl", "led_node": "chamber_light",
+            "led_mode": "on" if on else "off",
+            "led_on_time": 500, "led_off_time": 500, "loop_times": 0, "interval_time": 0,
+        }}
+        info = self._client.publish(self.request_topic, json.dumps(payload), qos=0)
+        info.wait_for_publish(timeout=self.ack_timeout)
+
     def __enter__(self):
         self.connect()
         return self

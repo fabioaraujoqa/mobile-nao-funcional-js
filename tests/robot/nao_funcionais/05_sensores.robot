@@ -13,8 +13,18 @@ ${TEXTO}          texto preservado
 
 
 *** Test Cases ***
-Tela de sensores aguenta mudanças de leitura
-    # .os.Sensors não serve: cai ao abrir, porque pede amostragem máxima sem a permissão exigida
+Tela de sensores abre sem cair
+    [Documentation]    Falha conhecida: .os.Sensors pede amostragem máxima sem a permissão exigida.
+    [Teardown]    Abrir Activity    ${PACOTE}    ${INICIAL}
+    Abrir Activity    ${PACOTE}    ${INICIAL}
+    Sleep    1s
+    ${pid}=    Obter Pid    ${PACOTE}
+    ${crashes}=    Contar Crashes    ${PACOTE}
+    Abrir Activity    ${PACOTE}    .os.Sensors
+    Sleep    2s
+    App não deve ter caído    ${pid}    ${crashes}
+
+Bússola aguenta mudanças de leitura
     Abrir Activity    ${PACOTE}    .graphics.Compass
     Sleep    1s
     ${pid}=    Obter Pid    ${PACOTE}

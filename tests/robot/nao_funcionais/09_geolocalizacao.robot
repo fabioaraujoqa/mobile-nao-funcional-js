@@ -5,9 +5,14 @@ Documentation     Rota simulada, salto brusco e GPS desligado.
 ...               O teste confere o que o aparelho informa e que o app sobrevive às mudanças.
 ...               No aparelho real, o Appium Settings precisa da permissão de localização.
 Resource          resources/nfr_keywords.resource
-Suite Setup       Abrir sessão NFR    .view.List1
+Suite Setup       Preparar geolocalização
 Suite Teardown    Encerrar geolocalização
 Test Tags         emulador    aparelho_real
+
+
+*** Variables ***
+# cerca de 20 m: menor que a distância entre os pontos da rota, para uma leitura antiga não passar
+${TOLERANCIA_GRAUS}    0.0002
 
 
 *** Test Cases ***
@@ -47,6 +52,11 @@ GPS desligado não derruba o app
 
 
 *** Keywords ***
+Preparar geolocalização
+    Abrir sessão NFR    .view.List1
+    # sem um app pedindo GPS, o aparelho não registra a posição; este broadcast liga o leitor do Appium Settings
+    Adb Shell    am broadcast -a io.appium.settings.location -n io.appium.settings/.receivers.LocationInfoReceiver
+
 Ir para a posição
     [Arguments]    ${caso}    ${latitude}    ${longitude}
     Set Geolocation    ${latitude}    ${longitude}
@@ -58,8 +68,8 @@ Ir para a posição
 Aparelho deve estar em
     [Arguments]    ${latitude}    ${longitude}
     ${lida}=    Obter Ultima Posicao
-    Should Be True    abs(${lida}[latitude] - ${latitude}) < 0.01    O aparelho informou outra latitude: ${lida}
-    Should Be True    abs(${lida}[longitude] - ${longitude}) < 0.01    O aparelho informou outra longitude: ${lida}
+    Should Be True    abs(${lida}[latitude] - ${latitude}) < ${TOLERANCIA_GRAUS}    O aparelho informou outra latitude: ${lida}
+    Should Be True    abs(${lida}[longitude] - ${longitude}) < ${TOLERANCIA_GRAUS}    O aparelho informou outra longitude: ${lida}
     RETURN    ${lida}
 
 Encerrar geolocalização

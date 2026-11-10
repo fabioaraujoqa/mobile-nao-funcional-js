@@ -68,3 +68,49 @@ def test_bad_requests(api):
     assert call("POST", "/nada", {})[0] == 404
     assert call("GET", "/nada")[0] == 404
     assert link.sent == []  # nada foi enviado à impressora
+
+
+@pytest.mark.parametrize("sente, esperado", [(True, 200), (False, 500)])
+def test_servidor_exige_contato_fisico(sente, esperado):
+    class Reader:
+        contacts = []
+
+        def wait_contact(self, before, timeout):
+            assert before == 0 and timeout == 3.0
+            return (360, 800) if sente else None
+
+    cal, _, _ = make_cal()
+    link = Recorder()
+    robot = RobotTap(make_cfg(), link, cal, sleep=lambda s: None)
+    server = make_server(robot, "127.0.0.1", 0, reader=Reader())
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        base = f"http://127.0.0.1:{server.server_address[1]}"
+        with urllib.request.urlopen(base + "/health") as response:
+            assert json.loads(response.read())["contact_verification"] is True
+        request = urllib.request.Request(
+            base + "/tap", data=b'{"x":360,"y":800}',
+            headers={"Content-Type": "application/json"},
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=5) as response:
+                status = response.status
+        except urllib.error.HTTPError as exc:
+            status = exc.code
+            assert "contato" in json.loads(exc.read())["error"]
+        assert status == esperado
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+
+def test_arraste_http_preserva_espera(api):
+    call, link = api
+    status, _ = call("POST", "/swipe", {
+        "x1": 360, "y1": 1200, "x2": 360, "y2": 500,
+        "duration_s": 0.8, "hold_s": 0.6,
+    })
+    assert status == 200
+    assert "G4 P600" in link.sent[-1]

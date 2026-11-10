@@ -1,6 +1,7 @@
 # Montagem, segurança e calibração
 
 Ordem para o primeiro uso: preparar a P1S, montar a mecânica, ler a segurança e calibrar.
+Para o roteiro detalhado, passo a passo, veja o [manual-p1s.md](manual-p1s.md).
 
 ## 1. Preparar a P1S
 

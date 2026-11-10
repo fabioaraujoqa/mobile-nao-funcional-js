@@ -42,5 +42,6 @@ screen:                  # Moto G06
 adb:
   path: adb
   serial: null           # udid do celular, se houver mais de um dispositivo
+  # touch_device: "sec_e-pen"  # nome do dispositivo de toque (ex.: S Pen do Galaxy Ultra); padrão: 1º touchscreen
 
 calibration_file: calibration.json

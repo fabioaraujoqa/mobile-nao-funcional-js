@@ -48,7 +48,8 @@ def _num(body: dict, key: str, default=None) -> float:
 
 
 def make_server(
-    robot: RobotTap, host: str = "127.0.0.1", port: int = 8765, simulated: bool = False
+    robot: RobotTap, host: str = "127.0.0.1", port: int = 8765, simulated: bool = False,
+    reader=None,
 ) -> ThreadingHTTPServer:
     lock = threading.Lock()
 
@@ -86,6 +87,7 @@ def make_server(
                     "ok": True,
                     "calibrated": cal is not None,
                     "simulated": simulated,
+                    "contact_verification": reader is not None,
                     "screen": {"width": cal.screen_w, "height": cal.screen_h} if cal else None,
                     "fit_error_mm": cal.fit_error_mm if cal else None,
                     "z_contact": cal.z_contact if cal else None,
@@ -103,6 +105,7 @@ def make_server(
                 "/swipe": lambda b: robot.swipe_px(
                     _num(b, "x1"), _num(b, "y1"), _num(b, "x2"), _num(b, "y2"),
                     duration_s=_num(b, "duration_s", 0.35),
+                    hold_s=_num(b, "hold_s", 0.0),
                 ),
                 "/park": lambda b: robot.park(),
             }
@@ -112,7 +115,11 @@ def make_server(
             try:
                 body = self._body()
                 with lock:
+                    before = len(reader.contacts) if reader is not None else 0
                     action(body)
+                    if reader is not None and self.path != "/park":
+                        if reader.wait_contact(before, timeout=3.0) is None:
+                            raise RuntimeError("o celular não sentiu o contato da ponteira")
                 self._send(200, {"ok": True})
             except (ValueError, KeyError, TypeError, ConfigError) as exc:
                 self._send(400, {"ok": False, "error": str(exc).strip("'\"")})
@@ -129,10 +136,11 @@ def main():
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--dry-run", action="store_true", help="não conecta na P1S; imprime o G-code")
+    ap.add_argument("--udid", help="celular usado para confirmar o contato físico")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 
-    simulated = False
+    simulated = args.dry_run
     try:
         cfg = load_config(args.config, require_printer=not args.dry_run)
     except ConfigError as exc:
@@ -160,7 +168,24 @@ def main():
         link.connect()
         robot = RobotTap(cfg, link, cal)
 
-    server = make_server(robot, args.host, args.port, simulated=simulated)
+    reader = None
+    try:
+        if not args.dry_run:
+            from taprobot.adb import AdbClient
+            from taprobot.device import resolve_udid
+            from taprobot.touch_reader import TouchReader, find_touch_device, get_wm_size
+
+            adb_path = cfg["adb"]["path"]
+            adb = AdbClient(args.udid or cfg["adb"]["serial"] or resolve_udid(adb=adb_path), adb_path)
+            width, height = get_wm_size(adb)
+            reader = TouchReader(adb, find_touch_device(adb, cfg["adb"].get("touch_device")), width, height)
+            reader.start()
+        server = make_server(robot, args.host, args.port, simulated=simulated, reader=reader)
+    except BaseException:
+        if reader is not None:
+            reader.stop()
+        robot.link.close()
+        raise
     print(f"Robô disponível em http://{args.host}:{args.port}  (Ctrl+C para parar)")
     try:
         server.serve_forever()
@@ -173,6 +198,8 @@ def main():
         except Exception as exc:  # noqa: BLE001
             print("Aviso: não consegui estacionar a ponteira:", exc)
         robot.link.close()
+        if reader is not None:
+            reader.stop()
 
 
 if __name__ == "__main__":

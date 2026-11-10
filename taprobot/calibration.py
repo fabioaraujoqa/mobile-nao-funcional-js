@@ -13,6 +13,18 @@ from pathlib import Path
 import numpy as np
 
 
+def fit_plane(xyz_pts):
+    """Ajusta z = a + bx*X + by*Y por mínimos quadrados. Retorna ([a, bx, by], resíduo máx.)."""
+    P = np.asarray(xyz_pts, dtype=float)
+    if P.shape[0] < 3:
+        raise ValueError("são necessários >= 3 pontos para o plano")
+    A = np.column_stack([np.ones(len(P)), P[:, 0], P[:, 1]])
+    if np.linalg.matrix_rank(A) < 3:
+        raise ValueError("pontos colineares: não dá para ajustar o plano")
+    sol, *_ = np.linalg.lstsq(A, P[:, 2], rcond=None)
+    return sol.tolist(), float(np.abs(A @ sol - P[:, 2]).max())
+
+
 def fit_affine(src_pts, dst_pts):
     """Ajusta dst = M @ [src, 1] por mínimos quadrados.
 
@@ -38,6 +50,16 @@ class Calibration:
     screen_h: int
     fit_error_mm: float = 0.0
     points: list = field(default_factory=list)  # [{"px":[x,y], "mm":[x,y]}]
+    # Plano da tela [a, bx, by]: Z de contato = a + bx*X + by*Y (mm). Vazio = tela plana em
+    # z_contact. Compensa o celular inclinado no gabarito (ex.: calombo das câmeras).
+    z_plane: list = field(default_factory=list)
+
+    def z_at(self, X: float, Y: float) -> float:
+        """Z de contato no ponto (X, Y) em mm do bico."""
+        if not self.z_plane:
+            return self.z_contact
+        a, bx, by = self.z_plane
+        return a + bx * X + by * Y
 
     def px_to_mm(self, x: float, y: float):
         a = self.affine
@@ -52,7 +74,7 @@ class Calibration:
         return float(px[0]), float(px[1])
 
     @classmethod
-    def from_pairs(cls, px_pts, mm_pts, z_contact, screen_w, screen_h):
+    def from_pairs(cls, px_pts, mm_pts, z_contact, screen_w, screen_h, z_plane=None):
         m, err = fit_affine(px_pts, mm_pts)
         pts = [
             {"px": [float(p[0]), float(p[1])], "mm": [float(q[0]), float(q[1])]}
@@ -65,6 +87,7 @@ class Calibration:
             screen_h=int(screen_h),
             fit_error_mm=float(err.max()),
             points=pts,
+            z_plane=[float(v) for v in z_plane] if z_plane is not None else [],
         )
 
     @classmethod

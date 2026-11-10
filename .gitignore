@@ -16,3 +16,10 @@ __pycache__/
 
 # macOS
 .DS_Store
+config_*.yaml
+calibration_*.json
+videos/
+
+# Node.js
+node_modules/
+coverage/

@@ -37,11 +37,11 @@ ATENÇÃO: a impressora vai se mover sozinha durante todo o teste.
 class TouchProbe:
     """Verificação de calibração real: toca e lê o pixel sentido pelo celular (getevent)."""
 
-    def __init__(self, serial: str, adb_path: str = "adb"):
+    def __init__(self, serial: str, adb_path: str = "adb", touch_device: str | None = None):
         from taprobot.touch_reader import TouchReader, find_touch_device, get_wm_size
         adb = AdbClient(serial, adb_path)
         w, h = get_wm_size(adb)
-        self.reader = TouchReader(adb, find_touch_device(adb), w, h)
+        self.reader = TouchReader(adb, find_touch_device(adb, touch_device), w, h)
         self.reader.start()
 
     def __call__(self, robot, x, y):
@@ -111,7 +111,7 @@ def cmd_run(args) -> int:
         link.connect()
         robot = RobotTap(cfg, link, Calibration.load(cal_path))
         if sc.calibration_check:
-            probe = TouchProbe(serial, cfg["adb"]["path"])
+            probe = TouchProbe(serial, cfg["adb"]["path"], cfg["adb"].get("touch_device"))
         else:
             print("Aviso: sem calibration_check no cenário, a calibração não será verificada durante o teste.")
         wear_path = Path(args.out) / "wear.json"

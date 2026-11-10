@@ -89,9 +89,16 @@ class RobotTap:
         if z > m["z_max"] + 1e-9:
             raise ValueError(f"Z={z:.2f} acima do z_max ({m['z_max']})")
 
-    def _z_levels(self):
-        hover = self.z_contact + self.m["hover_mm"]
-        touch = self.z_contact - self.m["press_mm"]
+    def _contact_at(self, x=None, y=None) -> float:
+        """Z de contato no ponto: o plano da calibração (celular inclinado) ou z_contact."""
+        if x is not None and self.cal is not None and self.cal.z_plane:
+            return self.cal.z_at(x, y)
+        return self.z_contact
+
+    def _z_levels(self, x=None, y=None):
+        zc = self._contact_at(x, y)
+        hover = zc + self.m["hover_mm"]
+        touch = zc - self.m["press_mm"]
         self._check_z(touch)
         self._check_z(hover)
         return hover, touch
@@ -148,7 +155,7 @@ class RobotTap:
 
     # ------------------------------------------------------------------ gestos (mm)
     def tap_mm(self, x, y, dwell_ms=None):
-        hover, touch = self._z_levels()
+        hover, touch = self._z_levels(x, y)
         self._check_xy(x, y)
         m = self.m
         dwell = int(m["tap_dwell_ms"] if dwell_ms is None else dwell_ms)
@@ -178,7 +185,9 @@ class RobotTap:
             raise ValueError("duration_s deve ser > 0")
         if hold_s < 0:
             raise ValueError("hold_s não pode ser negativo")
-        hover, touch = self._z_levels()
+        h1, touch = self._z_levels(x1, y1)
+        h2, touch2 = self._z_levels(x2, y2)
+        hover = max(h1, h2)
         self._check_xy(x1, y1)
         self._check_xy(x2, y2)
         m = self.m
@@ -199,7 +208,8 @@ class RobotTap:
                 f"G1 X{x1:.3f} Y{y1:.3f} F{int(m['feed_xy'])}",
                 f"G1 Z{touch:.3f} F{int(m['feed_z_touch'])}",
                 *([f"G4 P{int(hold_s * 1000)}"] if hold_s else []),
-                f"G1 X{x2:.3f} Y{y2:.3f} F{int(feed)}",
+                # Z acompanha a inclinação da tela durante o arraste (igual se a tela é plana)
+                f"G1 X{x2:.3f} Y{y2:.3f}" + (f" Z{touch2:.3f}" if abs(touch2 - touch) > 1e-6 else "") + f" F{int(feed)}",
                 f"G1 Z{hover:.3f} F{int(m['feed_z'])}",
             ],
             est,

@@ -16,7 +16,7 @@ from pathlib import Path
 
 import numpy as np
 from robot.api import logger
-from robot.libraries.BuiltIn import BuiltIn
+from robot.libraries.BuiltIn import BuiltIn, RobotNotRunningError
 from selenium.common.exceptions import WebDriverException
 
 from soak.parsers import (
@@ -145,6 +145,14 @@ def latencia_toque_ms(toque_s: float, quadros) -> float:
         if quadro > toque_s:
             return (quadro - toque_s) * 1000
     raise RuntimeError("nenhum quadro foi desenhado depois do toque: a tela não mudou")
+
+
+def pasta_resultados() -> Path:
+    """<pasta do -d>/nfr, para os CSVs de cada ambiente não se misturarem."""
+    try:
+        return Path(BuiltIn().get_variable_value("${OUTPUT DIR}")) / "nfr"
+    except RobotNotRunningError:
+        return RESULTADOS
 
 
 def _numero_ou_vazio(valor):
@@ -339,11 +347,12 @@ class nfr_appium:
 
     # ------------------------------------------------------------ CSV
     def gravar_csv(self, tipo, **campos) -> str:
-        """Acrescenta uma linha em results/nfr/<tipo>_<data-hora>.csv (grava já, sobrevive a falhas)."""
+        """Acrescenta uma linha em <pasta do -d>/nfr/<tipo>_<data-hora>.csv (grava já, sobrevive a falhas)."""
         if tipo not in self._csv:
-            RESULTADOS.mkdir(parents=True, exist_ok=True)
+            pasta = pasta_resultados()
+            pasta.mkdir(parents=True, exist_ok=True)
             carimbo = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            self._csv[tipo] = RESULTADOS / f"{tipo}_{carimbo}.csv"
+            self._csv[tipo] = pasta / f"{tipo}_{carimbo}.csv"
             self._colunas[tipo] = ["data_hora"] + list(campos)
             with self._csv[tipo].open("w", newline="", encoding="utf-8") as arquivo:
                 csv.writer(arquivo).writerow(self._colunas[tipo])
