@@ -33,8 +33,18 @@ class Nfr {
     const out = await this.shell(`am start -W -n ${PACKAGE}/${activity}`);
     if (/Error|Exception/.test(out)) throw Error(out);
   }
+  /** Fecha diálogos do sistema que cobririam os próximos testes, inclusive "o app parou". */
+  async fecharDialogos() {
+    await this.shell(
+      "am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS",
+    );
+    // O diálogo de crash não fecha com o broadcast no Android 10+: toca em "Fechar app".
+    for (const botao of await this.driver.$$("id=android:id/aerr_close"))
+      await botao.click().catch(() => {});
+  }
   async prepare(activity = APPS.apidemos.activity) {
     await this.shell("true");
+    await this.fecharDialogos();
     const w = await this.shell("dumpsys window");
     if (/(?:isKeyguardShowing|mShowingLockscreen)=true/.test(w))
       throw Error("Desbloqueie o aparelho");

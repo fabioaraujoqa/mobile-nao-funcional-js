@@ -2,30 +2,34 @@
 // Objetivo:    se o app usa GPS, câmera e sensores direito, e sobrevive quando eles falham.
 // O que testa: rota e salto de GPS, GPS desligado, câmera repetida e sem permissão,
 //              leituras de sensores e rotação da tela.
-// Onde rodar:  emulador (tudo) e mesa (GPS simulado, câmera, rotação). Sensores simulados só
-//              existem no emulador.
+// Onde rodar:  mesa (GPS simulado, câmera, rotação) e emulador (sensores, câmera, rotação).
+//              Sensores simulados só existem no emulador. Rota e salto de GPS são da mesa: no
+//              emulador a posição só é registrada se algum app estiver pedindo GPS, e o ApiDemos
+//              não pede (num app com mapa, valem também no emulador).
 // Appium:      mobile: setGeolocation · mobile: changePermissions · mobile: sensorSet ·
 //              setOrientation
 // Falhas conhecidas do ApiDemos ficam marcadas no título e não viram aprovação.
 const assert = require("node:assert/strict");
 const { Nfr, PACKAGE } = require("../support/nfr");
-const { ondeRodar } = require("../support/ambiente");
+const { ondeRodar, ambienteAtual } = require("../support/ambiente");
 const L = require("../support/limits");
 
 const CAMERA = "android.permission.CAMERA";
+// Sem um app pedindo GPS, o aparelho não registra a posição: este broadcast liga o leitor do
+// io.appium.settings (app de apoio do Appium). A posição é lida no provedor gps do sistema.
+const PEDIR_GPS =
+  "am broadcast -a io.appium.settings.location -n io.appium.settings/.receivers.LocationInfoReceiver";
 
 describe("10 · Sensores e localização: usa e sobrevive às falhas", () => {
   let n;
   before(async () => {
     n = new Nfr(browser, gestures);
     await n.prepare();
-    // No emulador, a posição só é registrada se algum app pedir o GPS.
-    await n.shell(
-      "am broadcast -a io.appium.settings.location -n io.appium.settings/.receivers.LocationInfoReceiver",
-    );
+    await n.shell(PEDIR_GPS);
   });
   after(async () => {
-    if (n) await n.mobile("resetGeolocation");
+    // resetGeolocation não existe no emulador; lá a posição simulada some ao reiniciá-lo.
+    if (n && !ambienteAtual().emulador) await n.mobile("resetGeolocation");
   });
   beforeEach(ondeRodar);
 
@@ -35,6 +39,7 @@ describe("10 · Sensores e localização: usa e sobrevive às falhas", () => {
       let lida;
       await browser.waitUntil(
         async () => {
+          // O io.appium.settings recebe o GPS a cada 60 s: a posição nova pode demorar.
           const m = (await n.shell("dumpsys location")).match(
             /last location=Location\[gps (-?[\d.]+),(-?[\d.]+)/,
           );
@@ -60,7 +65,7 @@ describe("10 · Sensores e localização: usa e sobrevive às falhas", () => {
       });
     }
 
-    it("Segue uma rota simulada", async function () {
+    it("Segue uma rota simulada [aparelho_real]", async function () {
       this.timeout(6 * 60000);
       const base = await n.baseline();
       for (const [lat, lon] of [
@@ -73,7 +78,7 @@ describe("10 · Sensores e localização: usa e sobrevive às falhas", () => {
       await n.alive(base);
     });
 
-    it("Sobrevive a um salto de posição (São Paulo → Paris)", async () => {
+    it("Sobrevive a um salto de posição (São Paulo → Paris) [aparelho_real]", async () => {
       const base = await n.baseline();
       await posicao("salto", -23.5505, -46.6333);
       await posicao("salto", 48.8566, 2.3522);
@@ -140,24 +145,13 @@ describe("10 · Sensores e localização: usa e sobrevive às falhas", () => {
           appPackage: PACKAGE,
           action: "grant",
         });
+        await n.fecharDialogos();
         await n.open();
       }
     });
   });
 
   describe("Sensores e rotação", () => {
-    it("Tela de sensores abre sem cair [emulador] [falha conhecida ApiDemos]", async () => {
-      await n.open();
-      const base = await n.baseline();
-      try {
-        await n.open(".os.Sensors");
-        await browser.pause(2000);
-        await n.alive(base, false);
-      } finally {
-        await n.open();
-      }
-    });
-
     it("Bússola aguenta mudanças de leitura [emulador]", async () => {
       await n.open(".graphics.Compass");
       const base = await n.baseline();
@@ -188,6 +182,19 @@ describe("10 · Sensores e localização: usa e sobrevive às falhas", () => {
         }
       } finally {
         await browser.setOrientation("PORTRAIT");
+      }
+    });
+
+    it("Tela de sensores abre sem cair [emulador] [falha conhecida ApiDemos]", async () => {
+      await n.open();
+      const base = await n.baseline();
+      try {
+        await n.open(".os.Sensors");
+        await browser.pause(2000);
+        await n.alive(base, false);
+      } finally {
+        await n.fecharDialogos();
+        await n.open();
       }
     });
   });

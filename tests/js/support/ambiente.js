@@ -44,4 +44,4 @@ function ondeRodar() {
   }
 }
 
-module.exports = { ondeRodar, motivoParaPular, marcas };
+module.exports = { ondeRodar, motivoParaPular, marcas, ambienteAtual };

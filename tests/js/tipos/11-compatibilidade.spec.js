@@ -19,6 +19,8 @@ describe("11 · Compatibilidade: igual em cada aparelho", () => {
     n = new Nfr(browser, gestures);
     page = new ApiDemosPage(browser, gestures);
     await n.prepare();
+    // As referências são em retrato; um teste anterior pode ter deixado a tela deitada.
+    await browser.setOrientation("PORTRAIT");
   });
   beforeEach(ondeRodar);
 
