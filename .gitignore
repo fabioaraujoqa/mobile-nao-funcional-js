@@ -5,7 +5,7 @@ calibration.json
 # Execuções do teste de resistência (CSV, capturas, relatórios, contador de desgaste)
 runs/
 
-# Saída do Robot Framework (log.html, report.html, output.xml, capturas)
+# Saída dos testes (WebdriverIO: CSVs, indicadores, capturas, comparação visual)
 results/
 
 # Ambiente

@@ -290,7 +290,7 @@ python -m tools.calibrate verify    # 10 toques em pontos aleatórios, mede o er
 ```
 
 Pior erro < 1 mm é bom para botões de 4 mm ou mais. Depois disso o robô está pronto para
-os testes ([testes-robot.md](testes-robot.md)) e o soak ([soak.md](soak.md)).
+os testes Appium ([testes-js.md](testes-js.md)) e o soak ([soak.md](soak.md)).
 
 **Recalibre** se mudar a posição do gabarito, mexer na caneta ou no módulo, trocar a
 borracha, ou mudar a resolução/escala de exibição do celular. **Refaça o homing** (passo 7,

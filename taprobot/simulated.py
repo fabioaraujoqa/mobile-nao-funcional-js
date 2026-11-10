@@ -1,6 +1,6 @@
 """Robô simulado: o mesmo RobotTap, sem impressora e sem calibração real.
 
-Usado pelo --dry-run do servidor e do soak e pelo modo SIMULADO do Robot Framework.
+Usado pelo --dry-run do servidor e do soak (e, pelo servidor, no modo SIMULADO dos testes).
 As coordenadas em mm não correspondem a nenhuma montagem: nunca use com a P1S.
 """
 from __future__ import annotations

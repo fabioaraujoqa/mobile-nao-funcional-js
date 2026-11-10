@@ -1,8 +1,9 @@
 const assert = require("node:assert/strict");
 const p = require("./parsers");
 const { Csv } = require("./csv");
-const { APPS } = require("./apps");
+const { APPS, resourceId } = require("./apps");
 const PACKAGE = APPS.apidemos.package;
+const SAVED = resourceId("apidemos", "saved");
 
 // Comandos adb (via `mobile: shell`) e medições do ApiDemos para os não funcionais.
 class Nfr {
@@ -67,6 +68,23 @@ class Nfr {
         PACKAGE,
         "App fora de primeiro plano",
       );
+  }
+  /** Abre o SaveRestoreState e digita um texto que deve sobreviver às interrupções. */
+  async digitarTexto(text) {
+    await this.open(".app.SaveRestoreState");
+    const el = await this.driver.$(SAVED);
+    await el.waitForDisplayed();
+    await el.setValue(text);
+  }
+  async textoDigitado() {
+    const el = await this.driver.$(SAVED);
+    await el.waitForDisplayed();
+    return el.getText();
+  }
+  /** O app continua vivo, na frente, e o texto digitado não se perdeu. */
+  async confirmaTexto(base, text) {
+    await this.alive(base);
+    assert.equal(await this.textoDigitado(), text, "Texto digitado se perdeu");
   }
   async scroll(direction = 1) {
     const { width, height } = await this.driver.getWindowSize();

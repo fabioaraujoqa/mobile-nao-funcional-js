@@ -14,36 +14,28 @@ P1S → ponteira toca a tela
 
 > **Status:** a lógica (conversão, limites de segurança, geração de G-code, parser do
 > `getevent`, soak) tem testes automáticos que passam. **Testado no hardware:** conexão
-> MQTT com a P1S, homing, movimento e desenho com caneta no papel; testes Robot no Moto G06
+> MQTT com a P1S, homing, movimento e desenho com caneta no papel; testes Appium no Moto G06
 > pelo USB (por software e com o robô simulado). **Ainda não testado:** toque na tela com a
 > ponteira, calibração no hardware e soak real.
 > Faça o primeiro uso com calma, seguindo [docs/montagem.md](docs/montagem.md).
 
-## Testes em JavaScript
+## Começo rápido
 
-A nova suíte usa **WebdriverIO + Appium**, com **Jest** para unitários JS.
-Veja [instalação, execução e transição](docs/testes-js.md).
-
-```bash
-npm ci
-npm test
-npm run test:funcionais
-```
-
-Calibragem e controle do braço continuam em Python. A suíte Robot Framework (`tests/robot/`)
-continua executável até a comparação no aparelho e no braço terminar.
-
-## Começo rápido (Python e legado)
+Duas partes: o **braço** (calibração, MQTT, G-code, servidor HTTP e soak) em Python, e os
+**testes Appium** em WebdriverIO (JavaScript), um arquivo por tipo de teste mobile.
 
 ```bash
+# Python: braço e testes unitários da lógica, sem hardware
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-source .venv/bin/activate
-python -m pytest                                              # testes da lógica, sem hardware
+.venv/bin/python -m pytest
+.venv/bin/python -m soak run soak/examples/apidemos_soak.yaml --dry-run   # soak simulado, ~2 min
 
-appium                                                        # em outro terminal
-robot -d results -e addnumber tests/robot/funcionais tests/robot/e2e   # testes no celular (clique por software)
-robot -d results -e addnumber -v ROBO:True -v SIMULADO:True tests/robot/funcionais tests/robot/e2e   # com o robô simulado
-python -m soak run soak/examples/apidemos_soak.yaml --dry-run # soak simulado, ~2 min
+# JavaScript: testes no celular (WebdriverIO + Appium)
+npm ci
+npm test                                       # unitários Jest, sem celular
+appium --allow-insecure=uiautomator2:adb_shell # em outro terminal
+npm run test:funcional                         # tipo 1, toque por software
+npm run test:tipos                             # os 12 tipos (tests/js/tipos/)
 ```
 
 O celular (Moto G06) é encontrado sozinho, no cabo USB ou na Depuração por Wi-Fi, e
@@ -56,8 +48,7 @@ calibração antes.
 |---|---|
 | Manual passo a passo: rede/Modo LAN, caneta no cabeçote, até a calibração | [docs/manual-p1s.md](docs/manual-p1s.md) |
 | Preparar a P1S, montar a ponteira, regras de segurança e calibrar (resumo) | [docs/montagem.md](docs/montagem.md) |
-| Escrever e rodar testes Appium (Robot Framework) com toque físico | [docs/testes-robot.md](docs/testes-robot.md) |
-| Testes WebdriverIO: instalação, arquitetura e execução | [docs/testes-js.md](docs/testes-js.md) |
+| Testes Appium (WebdriverIO): instalação, arquitetura, braço e execução | [docs/testes-js.md](docs/testes-js.md) |
 | O que a suíte cobre dos 12 tipos de teste mobile, e o que falta | [docs/cobertura.md](docs/cobertura.md) |
 | Teste de resistência (soak) e de consumo de bateria | [docs/soak.md](docs/soak.md) |
 | Limitações e solução de problemas | [docs/problemas.md](docs/problemas.md) |
@@ -77,11 +68,10 @@ taprobot/      biblioteca do robô (bambu.py MQTT, robot.py gestos, calibration.
                touch_reader.py, adb.py, device.py busca do celular, simulated.py)
 soak/          teste de resistência e de consumo (cenário, coletor, guardião, relatório)
 tools/         linha de comando: calibrate, test_connection, server (python -m tools.<nome>)
-tests/js/      testes WebdriverIO (specs, page objects, suporte) e unitários Jest
+tests/js/      testes WebdriverIO: tipos/ (um arquivo por tipo de teste), pages, support, Jest
 tests/unit/    testes unitários da lógica (sem hardware): python -m pytest -q
-tests/robot/   legado Robot Framework (funcionais/, e2e/, nao_funcionais/), em transição
 apps/          APK de exemplo (ApiDemos)
 docs/          decisões e aprendizados
-results/       saída do Robot e do WebdriverIO (não versionar)
+results/       saída dos testes: CSVs, indicadores, capturas (não versionar)
 runs/          execuções do soak (não versionar)
 ```

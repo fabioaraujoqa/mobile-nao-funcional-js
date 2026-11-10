@@ -8,7 +8,7 @@ class Csv {
   ) {
     this.dir = dir;
     this.files = new Map();
-    this.run = `${new Date().toISOString().replace(/[:.]/g, "-")}_${crypto.randomUUID().slice(0, 8)}`;
+    this.run = `${process.env.RODADA_ID || new Date().toISOString().replace(/[:.]/g, "-")}_${crypto.randomUUID().slice(0, 8)}`;
   }
   write(type, fields) {
     if (!/^[a-z_]+$/.test(type)) throw Error("Tipo de CSV inválido");

@@ -1,14 +1,11 @@
 // Regras da sessão Appium: qual aparelho, qual app e quais gestos cada spec usa.
-// Fica fora do wdio.conf.js para ser testada sem Appium.
+// Fica fora do wdio.conf.js para ser testada sem Appium. O ambiente de cada teste
+// (emulador, aparelho real, braço) é decidido por teste, em ambiente.js.
 const { execFileSync } = require("node:child_process");
 const { APPS } = require("./apps");
 
-const EMULATOR_ONLY = ["05-sensores", "06-rede", "07-interrupcoes"];
-const REAL_DEVICE_ONLY = ["04-bateria"];
-
 const uses = (specs, names) =>
   specs.some((spec) => names.some((name) => String(spec).includes(name)));
-const isEmulator = (udid) => udid.startsWith("emulator-");
 
 /** UDID explícito ou a descoberta USB/mDNS da infraestrutura Python. */
 function resolveUdid(env = process.env) {
@@ -21,37 +18,30 @@ function resolveUdid(env = process.env) {
   return out.trim().split("\n").at(-1);
 }
 
-function checkDevice(udid, specs) {
-  if (uses(specs, EMULATOR_ONLY) && !isEmulator(udid))
-    throw Error("Esta suíte exige emulador Android (UDID=emulator-5554)");
-  if (uses(specs, REAL_DEVICE_ONLY) && isEmulator(udid))
-    throw Error("Bateria exige aparelho real fora da tomada");
-}
-
 function appFor(specs) {
   return uses(specs, ["addnumber.spec"]) ? APPS.addnumber : APPS.apidemos;
 }
 
 /** Capabilities que dependem do aparelho e do spec em execução. */
 function capabilities(specs, env = process.env) {
-  const udid = resolveUdid(env);
-  checkDevice(udid, specs);
   const app = appFor(specs);
   return {
-    "appium:udid": udid,
+    "appium:udid": resolveUdid(env),
     "appium:appPackage": app.package,
     "appium:appActivity": app.activity,
     ...(app.apk && { "appium:app": app.apk }),
   };
 }
 
+// Tipos que podem usar o braço: os que tocam na tela como o usuário.
+const TOQUE_FISICO = ["01-funcional", "02-usabilidade", "addnumber.spec"];
+
 /**
- * Opções de Gestures por spec. Os não funcionais medem o app, não o toque:
- * usam gestos por software, exceto a latência, que existe para medir o braço.
+ * Opções de Gestures por spec. Os tipos 03 a 12 medem o app, não o toque:
+ * usam gestos por software mesmo com ROBO=true.
  */
 function gestureOptions(specs) {
-  const nfr = uses(specs, ["nao-funcionais"]);
-  return nfr && !uses(specs, ["10-latencia"])
+  return uses(specs, ["/tipos/"]) && !uses(specs, TOQUE_FISICO)
     ? { robot: false, simulated: false }
     : {};
 }

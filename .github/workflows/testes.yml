@@ -1,5 +1,5 @@
 # Roda a cada push e pull request. Nada aqui precisa de celular nem da impressora:
-# os testes usam adb, robô e relógio simulados, e o Robot roda em --dryrun (só sintaxe).
+# os testes Python usam adb, braço e relógio simulados; os de WebdriverIO rodam em --dry-run.
 name: testes
 
 on:
@@ -25,9 +25,6 @@ jobs:
 
       - name: Testes da lógica (pytest)
         run: python -m pytest -q
-
-      - name: Sintaxe dos testes Robot (--dryrun)
-        run: robot --dryrun --output NONE --log NONE --report NONE tests/robot
 
   javascript:
     runs-on: ubuntu-latest

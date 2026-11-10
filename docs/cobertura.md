@@ -2,7 +2,7 @@
 
 Este documento compara os 12 tipos de teste mobile (funcional e não funcionais) com o que a suíte
 cobre hoje, onde cada um está, como é medido e o que falta. Os números vêm dos resultados
-guardados em `results/` (suíte Robot, 05/11/2026; Moto G06 com Android 15 e emulador com
+guardados em `results/` (rodadas de 05/11/2026, suíte anterior; Moto G06 com Android 15 e emulador com
 Android 14, ApiDemos 6.0.18).
 
 Situação: ✅ coberto · ◐ parcial · ✗ não coberto
@@ -124,7 +124,7 @@ fica igual em qualquer cliente.
 
 ## Origem dos números
 
-- Resultados Robot em `results/g06/` e `results/emulador/` (`*.xml` e `nfr/*.csv`).
+- Rodadas de 05/11 em `results/g06/` e `results/emulador/` (`nfr/*.csv`).
 - A suíte WebdriverIO mede da mesma forma, mas até agora só rodou no aparelho os funcionais, o e2e
   e o `02-fluidez`. Para citar números "da suíte WebdriverIO", rode os não funcionais de novo.
 - Os comandos `mobile:` citados aqui existem no UiAutomator2 6.8.0 instalado, com esses parâmetros.

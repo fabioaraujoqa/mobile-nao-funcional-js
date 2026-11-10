@@ -1,5 +1,5 @@
 // Parâmetros e limites dos não funcionais. Todos aceitam variável de ambiente
-// com o mesmo nome (ex.: JANK_MAX_PCT=30), como no legado Robot.
+// com o mesmo nome (ex.: JANK_MAX_PCT=30).
 const defaults = {
   DURACAO_MIN: 30,
   INICIO_REPETICOES: 10,
@@ -21,6 +21,10 @@ const defaults = {
   BATERIA_INTERVALO_MIN: 5,
   BATERIA_MAX_PCT_POR_HORA: 25,
   BATERIA_TELA_LIGADA_MS: 1800000,
+  BATERIA_TEMP_MAX_C: 45,
+  ALVO_TOQUE_MIN_DP: 48,
+  FONTE_ESCALA: 1.3,
+  VISUAL_DIFERENCA_MAX_PCT: 0.5,
   CAMERA_REPETICOES: 10,
   LATENCIA_REPETICOES: 20,
   LATENCIA_P50_MAX_MS: 150,

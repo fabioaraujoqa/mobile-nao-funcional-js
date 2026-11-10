@@ -3,46 +3,36 @@
 Registro do porquê das escolhas do projeto e do que foi aprendido no hardware real.
 O "como usar" fica no [README](../README.md).
 
-## 1. Tudo em Python, testes em Robot Framework
-
-Em 6 de outubro de 2026 os testes em JS (WebdriverIO) foram trocados por **Robot Framework
-+ AppiumLibrary**, e o projeto ficou todo em Python. O estado anterior, com o JS, está no
-primeiro commit do repositório.
+## 1. Braço em Python, testes Appium em WebdriverIO
 
 | Parte | Onde |
 |---|---|
-| Robô (MQTT, G-code, travas de segurança, calibração, leitura de toque, busca do celular) | `taprobot/` |
-| Testes Appium (palavras-chave) | `tests/robot/` |
-| Teste de resistência e de consumo (cenário em YAML) | `soak/` |
-| Linha de comando (calibração, teste de conexão, servidor HTTP) | `tools/` |
-| Testes unitários (pytest, sem hardware) | `tests/unit/` |
+| Braço (MQTT, G-code, travas de segurança, calibração, leitura de toque, busca do celular) | `taprobot/` |
+| Linha de comando (calibração, teste de conexão, servidor HTTP do braço, gráficos) | `tools/` |
+| Teste de resistência e de consumo com o braço (cenário em YAML) | `soak/` |
+| Testes Appium, um arquivo por tipo de teste mobile | `tests/js/tipos/` |
+| Testes unitários sem hardware (pytest e Jest) | `tests/unit/`, `tests/js/unit/` |
 
-**Por quê.** Uma linguagem só: o robô entra nos testes no mesmo processo, sem o servidor
-HTTP no meio, e qualquer parte do projeto pode ser mantida pela mesma pessoa. O Robot
-Framework foi escolhido (e não pytest puro) porque palavras-chave legíveis e o relatório
-pronto (log.html/report.html) valem muito para testes de QA, e já era familiar.
+**Por quê.** O controle do braço depende de MQTT, numpy e da leitura do `getevent`, e já
+estava testado em Python; continua lá. Os testes Appium ficaram em WebdriverIO: o comando
+`mobile:` é o mesmo do Appium em qualquer cliente, e o ecossistema do WebdriverIO traz o teste
+visual (`@wdio/visual-service`) e os page objects sem camada extra. Os testes chegam ao braço
+pelo servidor HTTP (`python -m tools.server`), com o mesmo celular da sessão Appium.
 
-**Formato dos testes.** Parecido com um projeto Robot simples (um resource de sessão +
-testes), com duas camadas a mais por causa do robô:
+**Histórico.** Em outubro de 2026 os testes foram escritos em Robot Framework + AppiumLibrary;
+em novembro de 2026 voltaram para WebdriverIO, reorganizados nos 12 tipos de teste, e o Robot
+foi removido. Tudo está no histórico do git.
 
-- `robo.resource` tem o `Clicar`: toque físico com `ROBO=True`, clique por software sem.
-  O mesmo teste roda nos dois modos, e o modo simulado valida tudo sem a P1S.
-- `pages/*.resource` guarda seletores e ações de cada tela (page object leve), para os
-  `.robot` ficarem só com passos legíveis.
+**O que fica fora dos testes Appium, de propósito.** O soak com o braço roda em Python puro:
+ele roda horas sem ninguém olhando, e o guardião precisa controlar o braço diretamente para
+estacionar a ponteira em qualquer falha. Quem escreve o roteiro edita só o YAML.
 
-**O que ficou de fora do Robot, de propósito.** O soak roda em Python puro (não como
-teste Robot): ele roda horas sem ninguém olhando, e o guardião precisa controlar o robô
-diretamente para estacionar a ponteira em qualquer falha. Quem escreve o roteiro edita só o
-YAML. O servidor HTTP continua em `tools/` para quem quiser usar o robô de outra linguagem.
-A alternativa em pytest (`examples/` e `taprobot/appium_patch.py`) foi removida em 6 de
-outubro de 2026 por não ter mais uso; está no histórico do git.
-
-## 2. Próximo passo possível: soak com fluxo em Robot
+## 2. Próximo passo possível: soak com fluxo em WebdriverIO
 
 O cenário do soak usa coordenadas fixas. Se um app real tiver layout que muda, uma opção é
-um modo `python -m soak monitor`, que só coleta, vigia e gera o relatório, enquanto uma
-suíte Robot roda em laço localizando elementos pelo Appium. O guardião precisaria avisar a
-suíte para parar (ex.: a `TapRobotLibrary` passa a recusar toques depois de um aborto).
+um modo `python -m soak monitor`, que só coleta, vigia e gera o relatório, enquanto o
+`05-resistencia` roda em laço localizando elementos pelo Appium. O guardião precisaria avisar
+os testes para parar (ex.: o servidor do braço passa a recusar toques depois de um aborto).
 Só vale a pena quando houver esse app.
 
 ### Ideias vindas do BambuScribe
@@ -87,7 +77,7 @@ ideia for implementada, deve ser reescrita aqui.
 
 **Celular (Moto G06, Android 15)**
 - Depuração por Wi-Fi: parear uma vez (`adb pair`); a porta muda a cada vez que a depuração
-  é religada ou a rede muda (`python -m taprobot.device` acha a porta nova; os testes Robot fazem isso sozinhos). Ao trocar de rede, é
+  é religada ou a rede muda (`python -m taprobot.device` acha a porta nova; os testes WebdriverIO fazem isso sozinhos, via `taprobot.device`). Ao trocar de rede, é
   preciso religar a depuração no celular e aceitar a rede.
 - O app Appium Settings fecha sozinho no Android 15 sem permissão de localização
   ("Appium Settings app is not running"). Correção, uma vez por instalação:
