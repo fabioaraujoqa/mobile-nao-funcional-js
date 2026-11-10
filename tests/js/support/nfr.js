@@ -1,0 +1,173 @@
+const assert = require("node:assert/strict");
+const p = require("./parsers");
+const { Csv } = require("./csv");
+const { APPS } = require("./apps");
+const PACKAGE = APPS.apidemos.package;
+
+// Comandos adb (via `mobile: shell`) e medições do ApiDemos para os não funcionais.
+class Nfr {
+  constructor(driver, gestures) {
+    this.driver = driver;
+    this.gestures = gestures;
+    this.csv = new Csv();
+    this.previous = null;
+    this.touchLog = `/data/local/tmp/nfr_getevent_${Date.now()}.log`;
+  }
+  mobile(command, args = {}) {
+    return this.driver.execute(`mobile: ${command}`, args);
+  }
+  async shell(command) {
+    try {
+      const out = await this.mobile("shell", { command, timeout: 30000 });
+      return typeof out === "string" ? out : out.stdout || "";
+    } catch (e) {
+      if (String(e).includes("adb_shell"))
+        throw Error(
+          "Inicie Appium com --allow-insecure=uiautomator2:adb_shell",
+        );
+      throw e;
+    }
+  }
+  async open(activity = APPS.apidemos.activity) {
+    const out = await this.shell(`am start -W -n ${PACKAGE}/${activity}`);
+    if (/Error|Exception/.test(out)) throw Error(out);
+  }
+  async prepare(activity = APPS.apidemos.activity) {
+    await this.shell("true");
+    const w = await this.shell("dumpsys window");
+    if (/(?:isKeyguardShowing|mShowingLockscreen)=true/.test(w))
+      throw Error("Desbloqueie o aparelho");
+    await this.open(activity);
+  }
+  async pid() {
+    return p.num(await this.shell(`pidof ${PACKAGE} || true`), /(\d+)/);
+  }
+  async crashes() {
+    return Number(
+      (
+        await this.shell(
+          `logcat -d -b crash | grep -c 'Process: ${PACKAGE}' || true`,
+        )
+      ).trim() || 0,
+    );
+  }
+  async baseline() {
+    const pid = await this.pid();
+    assert.ok(pid, "App não está em execução");
+    return { pid, crashes: await this.crashes() };
+  }
+  async alive(base, focus = true) {
+    assert.equal(await this.pid(), base.pid, "Processo morreu ou reiniciou");
+    assert.equal(await this.crashes(), base.crashes, "Crash registrado");
+    if (focus)
+      assert.equal(
+        (await this.shell("dumpsys activity activities")).match(
+          /(?:topResumedActivity|ResumedActivity)[=:]\s*ActivityRecord\{\S+ \S+ ([\w.]+)\//,
+        )?.[1],
+        PACKAGE,
+        "App fora de primeiro plano",
+      );
+  }
+  async scroll(direction = 1) {
+    const { width, height } = await this.driver.getWindowSize();
+    if (!this.gestures)
+      throw Error("Nfr sem gestures: use new Nfr(browser, gestures)");
+    await this.gestures.swipe(
+      width / 2,
+      height * (0.5 + 0.3 * direction),
+      width / 2,
+      height * (0.5 - 0.3 * direction),
+      0.3,
+    );
+  }
+  async wait(seconds) {
+    for (let left = seconds; left > 0; left -= 60) {
+      await this.driver.pause(Math.min(left, 60) * 1000);
+      await this.shell("true");
+    }
+  }
+  async startup(mode) {
+    if (mode === "morno") await this.shell("input keyevent HOME");
+    const out = await this.shell(
+        `am start -W ${mode === "frio" ? "-S" : "-f 0x10008000"} -n ${PACKAGE}/${APPS.apidemos.activity}`,
+      ),
+      r = p.startup(out);
+    if (r.total_ms == null) throw Error(`TotalTime ausente: ${out}`);
+    return r;
+  }
+  async sample(start, event = "") {
+    const pid = await this.pid();
+    let memory = { pss_mb: null, java_heap_mb: null, native_heap_mb: null },
+      threads = null,
+      cpu_pct = null;
+    if (pid != null) {
+      memory = p.meminfo(await this.shell(`dumpsys meminfo ${PACKAGE}`));
+      threads = p.num(
+        await this.shell(`cat /proc/${pid}/status || true`),
+        /^Threads:\s*(\d+)/m,
+      );
+      const proc = p.cpuTicks(
+          await this.shell(`cat /proc/${pid}/stat || true`),
+        ),
+        total = p.totalTicks(await this.shell("cat /proc/stat"));
+      if (
+        this.previous?.pid === pid &&
+        proc != null &&
+        total != null &&
+        this.previous.proc != null &&
+        this.previous.total != null
+      ) {
+        const dp = proc - this.previous.proc,
+          dt = total - this.previous.total;
+        if (dp >= 0 && dt > 0) cpu_pct = (100 * dp) / dt;
+      }
+      this.previous = { pid, proc, total };
+    } else this.previous = null;
+    const battery = p.battery(await this.shell("dumpsys battery")),
+      temp = p.thermal(await this.shell("dumpsys thermalservice || true"));
+    return {
+      pid,
+      ...memory,
+      threads,
+      cpu_pct,
+      ...battery,
+      temperatura_c: temp ?? battery.temperatura_c,
+      horas: (Date.now() - start) / 3600000,
+      evento: event,
+    };
+  }
+  async startTouch() {
+    const devices = await this.shell("getevent -lp");
+    const blocks = devices.split(/add device/).slice(1);
+    const device = blocks
+      .find((b) => /ABS_MT_POSITION_X/.test(b) && /ABS_MT_POSITION_Y/.test(b))
+      ?.match(/\/dev\/input\/event\d+/)?.[0];
+    if (!device) throw Error("Touchscreen não encontrado");
+    const out = await this.shell(
+      `nohup getevent -lt ${device} > ${this.touchLog} 2>&1 < /dev/null & echo $!`,
+    );
+    this.touchPid = Number(out.trim());
+    if (!Number.isInteger(this.touchPid) || this.touchPid <= 0)
+      throw Error("PID inválido do getevent");
+  }
+  async stopTouch() {
+    try {
+      if (this.touchPid) await this.shell(`kill ${this.touchPid} || true`);
+    } finally {
+      await this.shell(`rm -f ${this.touchLog}`);
+    }
+  }
+  async latency(previous) {
+    const toque_s = p.touch(await this.shell(`cat ${this.touchLog}`));
+    if (toque_s == null || (previous != null && toque_s <= previous))
+      throw Error("Nenhum contato físico novo");
+    return {
+      toque_s,
+      latencia_ms: p.latency(
+        toque_s,
+        p.frames(await this.shell(`dumpsys gfxinfo ${PACKAGE} framestats`)),
+      ),
+    };
+  }
+}
+module.exports = { Nfr, PACKAGE };

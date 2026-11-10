@@ -19,7 +19,21 @@ P1S → ponteira toca a tela
 > ponteira, calibração no hardware e soak real.
 > Faça o primeiro uso com calma, seguindo [docs/montagem.md](docs/montagem.md).
 
-## Começo rápido
+## Testes em JavaScript
+
+A nova suíte usa **WebdriverIO + Appium**, com **Jest** para unitários JS.
+Veja [instalação, execução e transição](docs/testes-js.md).
+
+```bash
+npm ci
+npm test
+npm run test:funcionais
+```
+
+Calibragem e controle do braço continuam em Python. A suíte Robot Framework (`tests/robot/`)
+continua executável até a comparação no aparelho e no braço terminar.
+
+## Começo rápido (Python e legado)
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
@@ -40,7 +54,8 @@ calibração antes.
 
 | Para | Leia |
 |---|---|
-| Preparar a P1S, montar a ponteira, regras de segurança e calibrar | [docs/montagem.md](docs/montagem.md) |
+| Manual passo a passo: rede/Modo LAN, caneta no cabeçote, até a calibração | [docs/manual-p1s.md](docs/manual-p1s.md) |
+| Preparar a P1S, montar a ponteira, regras de segurança e calibrar (resumo) | [docs/montagem.md](docs/montagem.md) |
 | Escrever e rodar testes Appium (Robot Framework) com toque físico | [docs/testes-robot.md](docs/testes-robot.md) |
 | Teste de resistência (soak) e de consumo de bateria | [docs/soak.md](docs/soak.md) |
 | Limitações e solução de problemas | [docs/problemas.md](docs/problemas.md) |
@@ -60,10 +75,11 @@ taprobot/      biblioteca do robô (bambu.py MQTT, robot.py gestos, calibration.
                touch_reader.py, adb.py, device.py busca do celular, simulated.py)
 soak/          teste de resistência e de consumo (cenário, coletor, guardião, relatório)
 tools/         linha de comando: calibrate, test_connection, server (python -m tools.<nome>)
+tests/js/      testes WebdriverIO (specs, page objects, suporte) e unitários Jest
 tests/unit/    testes unitários da lógica (sem hardware): python -m pytest -q
-tests/robot/   testes Appium em Robot Framework: funcionais/, e2e/ e nao_funcionais/
+tests/robot/   legado Robot Framework (funcionais/, e2e/, nao_funcionais/), em transição
 apps/          APK de exemplo (ApiDemos)
 docs/          decisões e aprendizados
-results/       saída do Robot (não versionar)
+results/       saída do Robot e do WebdriverIO (não versionar)
 runs/          execuções do soak (não versionar)
 ```
