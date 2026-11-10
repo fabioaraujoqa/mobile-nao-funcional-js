@@ -16,7 +16,7 @@ Situação: ✅ coberto · ◐ parcial · ✗ não coberto
 | 3 | Acessibilidade | ✅ | `03-acessibilidade` | emulador, mesa | fonte 130%, rótulos e modo escuro passam |
 | 4 | Performance | ✅ | `04-performance` | emulador, mesa | G06: frio p50 772 ms, morno p50 195 ms, jank 0,22% |
 | 5 | Resistência (soak) | ✅ | `05-resistencia` | mesa | G06, 2 h: ~38,5 MB/h; **reprovado** (abaixo) |
-| 6 | Bateria e temperatura | ◐ | `06-bateria-temperatura` | aparelho real | ainda sem rodada fora da tomada |
+| 6 | Bateria e temperatura | ✅ | `06-bateria-temperatura` | aparelho real | G06, 1 h fora da tomada: 3,3 %/h, máx. 34 °C |
 | 7 | Conectividade | ✅ | `07-conectividade` | emulador, mesa | perda/volta, Wi-Fi → dados, velocidades |
 | 8 | Interrupção | ✅ | `08-interrupcao` | emulador, mesa | chamada, SMS, 2º plano e bloqueio, texto preservado |
 | 9 | Concorrência | ✅ | `09-concorrencia` | emulador, mesa | outro app, memória crítica, "Não manter atividades" |
@@ -24,7 +24,7 @@ Situação: ✅ coberto · ◐ parcial · ✗ não coberto
 | 11 | Compatibilidade | ✅ | `11-compatibilidade` | emulador, mesa | referências visuais do G06 e do emulador |
 | 12 | Segurança | ◐ | `12-seguranca` | emulador, mesa | permissões e arquivos ok; build depurável (falha conhecida) |
 
-Total: 9 cobertos e 3 parciais. Nenhum tipo está sem cobertura.
+Total: 10 cobertos e 2 parciais. Nenhum tipo está sem cobertura.
 
 Marcas no título de cada teste dizem onde ele roda: `[emulador]`, `[aparelho_real]`, `[braco]` e
 `[longo]`. Fora do ambiente, o teste é pulado com o motivo no log e em `indicadores/testes.csv`.
@@ -88,10 +88,18 @@ Falhas do próprio ApiDemos ficam marcadas `[falha conhecida ApiDemos]` e contin
   300 MB em 6 h 46 min). No ritmo atual, o PSS chegaria a 300 MB em cerca de 6 h. O vazamento é do
   ApiDemos (há animações e telas de exemplo no laço). O teste faz o que deve: reprova e registra.
 
-### 6. Bateria e temperatura ◐
-- **Como:** lê `dumpsys battery` e a temperatura a cada 5 min. Limites: 25 %/h de consumo e 45 °C.
-  Pula (com o motivo) se o aparelho estiver carregando, e só roda em aparelho real.
-- **Falta:** uma rodada válida, com depuração por Wi-Fi e o cabo desligado por cerca de 1 h.
+### 6. Bateria e temperatura ✅
+- **Como:** com a tela acesa nas Bouncing Balls (animação contínua), lê `dumpsys battery` e a
+  temperatura a cada 5 min. Limites: 25 %/h de consumo (regressão linear) e 45 °C. Pula (com o
+  motivo) se o aparelho estiver carregando, e só roda em aparelho real.
+- **Rodada do G06 (10/11, 60 min, adb por Wi-Fi):** bateria de 100% para 97%, consumo de
+  **3,3 %/h**, e temperatura máxima de **34 °C**, que caiu para 29 °C ao longo da rodada. CPU do app
+  em torno de 5%. Aprovado.
+- **Cuidado ao ler:** o nível da bateria só muda de 1 em 1%, então rodadas curtas dão pouca
+  precisão. E logo depois de sair dos 100% o Android segura o nível por um tempo. Para comparar
+  versões, use rodadas de 1 h ou mais, começando abaixo de 100%.
+- **Como rodar sem cabo:** com o cabo ligado, `adb tcpip 5555`; depois tire o cabo e use
+  `adb connect <ip>:5555` e `UDID=<ip>:5555 DURACAO_MIN=60 BATERIA_TELA_LIGADA_MS=4200000`.
 
 ### 7. Conectividade ✅
 - Sem Wi-Fi nem dados e a volta da rede `[emulador]`, a troca Wi-Fi → dados móveis e as velocidades
@@ -157,9 +165,8 @@ nome, e os gráficos saem com `python -m tools.graficos`.
 ## Próximos passos, por prioridade
 
 1. **Braço na tela:** rodar `01-funcional` e a latência do `02` com `ROBO=true` depois da calibração.
-2. **Bateria:** rodada fora da tomada, com depuração por Wi-Fi.
-3. **Interrupção:** notificações.
-4. **Compatibilidade:** mais aparelhos na matriz visual.
+2. **Interrupção:** notificações.
+3. **Compatibilidade:** mais aparelhos na matriz visual.
 
 O WebdriverIO também tem atalhos como `browser.gsmCall()`, mas eles chamam o mesmo `mobile:` do
 Appium. Trocar não traz capacidade nova, então a suíte continua com `execute('mobile: ...')`, que
@@ -168,6 +175,6 @@ fica igual em qualquer cliente.
 ## Origem dos números
 
 - Rodadas de 10/11/2026 em `results/wdio/` (`indicadores/*.csv` e `nfr/*.csv`). O soak é a rodada
-  `2026-11-10-20-08-48`.
+  `2026-11-10-20-08-48` e a bateria, a `2026-11-10-22-38-00`.
 - Rodadas de 05/11 (suíte anterior) em `results/g06/` e `results/emulador/`.
 - Os comandos `mobile:` citados aqui existem no UiAutomator2 6.8.0 instalado, com esses parâmetros.
