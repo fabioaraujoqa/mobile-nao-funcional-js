@@ -160,7 +160,7 @@ Toda rodada grava duas tabelas em `results/wdio/indicadores/`, que só recebem l
 As duas levam o contexto da rodada: id, aparelho, UDID, emulador ou não, Android, API, app e versão,
 commit, versão do Appium, tipo e spec. Assim dá para montar painéis por aparelho, por versão do app
 ou ao longo do tempo. As amostras brutas ficam em `results/wdio/nfr/`, com o mesmo id de rodada no
-nome, e os gráficos saem com `python -m tools.graficos`.
+nome, e o painel sai com `npm run painel` (HTML que abre sem internet).
 
 ## Próximos passos, por prioridade
 

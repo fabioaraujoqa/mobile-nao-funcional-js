@@ -23,12 +23,16 @@ tests/js/
   pages/                     page objects (ApiDemosPage, AddNumberPage)
   visual/referencia/         imagens de referência do teste visual, uma por aparelho
   support/
+    env.js                   parâmetros por variável de ambiente (Appium, UDID, braço, saída)
+    suite.js                 prepararSuite(): ganchos comuns dos specs de tipos/
     apps.js                  pacote, activity e APK de cada app; resourceId()
     session.js               UDID, capabilities e modo de gestos por spec
     ambiente.js              "onde rodar" de cada teste, lido do título ([emulador] etc.)
     gestures.js              toque por software, braço real ou simulado
     robot-client.js          HTTP para o servidor do braço (python -m tools.server)
-    nfr.js                   comandos adb e coletas (memória, CPU, bateria, toque)
+    nfr.js                   comandos adb e coletas (memória, CPU, bateria, toque);
+                             comConfiguracao() muda um settings e devolve o valor antigo
+    indicadores.js           CSVs fixos de testes e métricas, com o contexto da rodada
     parsers.js metrics.js    leitura de dumpsys/getevent e estatística (puros, testados)
     limits.js csv.js         limites/parâmetros por variável de ambiente; CSV por amostra
   unit/                      Jest, sem aparelho
@@ -37,8 +41,28 @@ tests/js/
 Regras: cada arquivo de `tipos/` começa com um cabeçalho (objetivo, o que testa, onde rodar,
 comandos Appium) e tem um `describe` com o objetivo do tipo. O título de cada teste diz onde ele
 roda: `[emulador]`, `[aparelho_real]` (sem marca = qualquer um) e `[braco]`. Fora do seu ambiente,
-o teste fica pendente (SKIP) com o motivo no log. Specs usam page objects e `gestures` (global criado no hook `before`); dependências
-de `Nfr` e das páginas são passadas no construtor; pacotes e ids vêm de `apps.js`. O limite
+o teste fica pendente (SKIP) com o motivo no log. `[longo]` marca os testes que duram `DURACAO_MIN`
+(ficam fora da suíte `rapidos`).
+
+Um spec novo de `tipos/` começa assim:
+
+```js
+const { prepararSuite } = require("../support/suite");
+const { medir } = require("../support/indicadores");
+const L = require("../support/limits");
+
+describe("N · Tipo: objetivo", () => {
+  const n = prepararSuite(); // confere o aparelho, abre o app e pula fora do ambiente
+  it("Faz algo [emulador]", async () => {
+    medir("Nome da métrica", valor, { max: L.ALGUM_LIMITE, unidade: "ms" });
+  });
+});
+```
+
+Toque na tela passa por `gestures` (global criado no hook `before`), para valer com ou sem braço.
+Configuração do aparelho que o teste muda volta no fim: `n.comConfiguracao(...)` para `settings`,
+`finally` para o resto. Métricas usam `medir()` (registra e reprova fora do limite) ou
+`registrar()` (só registra). Pacotes e ids vêm de `apps.js`; seletores, dos page objects. O limite
 padrão por teste é 10 min; soak e bateria ampliam com `this.timeout()` a partir de `DURACAO_MIN`.
 
 ## Executar
@@ -57,12 +81,14 @@ e aponte `APPIUM_URL`, por exemplo `appium --port 4725 ...` e `APPIUM_URL=http:/
 Com o celular desbloqueado e autorizado no ADB:
 
 ```bash
-npm run test:funcional                # tipo 1, ApiDemos (APK incluído)
-npm run test:nfr                      # tipos 2 a 12
 npm run test:tipos                    # os 12 tipos
+npm run test:rapidos                  # sem os [longo] (soak e bateria)
+npm run test:longos                   # só soak e bateria
+npm run test:braco                    # 01 e 02, os que tocam como o usuário
+npm run test:funcional                # tipo 1
+npm run test:mobile -- --suite concorrencia   # um tipo pelo nome
 npm run test:addnumber                # exige AddNumber instalado separadamente
-UDID=emulator-5554 npm run test:tipos # no emulador
-npm run test:mobile -- --spec tests/js/tipos/09-concorrencia.spec.js   # um tipo só
+UDID=emulator-5554 npm run test:rapidos       # no emulador
 ```
 
 Sem `UDID`, usa a descoberta Python existente. `PYTHON` pode apontar para outro interpretador;
@@ -77,16 +103,16 @@ O servidor precisa usar o mesmo celular da sessão Appium e a configuração já
 ```bash
 # Terminal 1: Appium (acima)
 # Terminal 2: braço real; não iniciar sem preparar/calibrar o equipamento
-.venv/bin/python -m tools.server --config config_s25.yaml --udid SEU_SERIAL
+.venv/bin/python -m tools.server --config config.yaml --udid SEU_SERIAL
 # Terminal 3: testes
-UDID=SEU_SERIAL ROBO=true npm run test:funcional
+UDID=SEU_SERIAL ROBO=true npm run test:braco
 ```
 
 Para simular o braço sem conectar à P1S:
 
 ```bash
 .venv/bin/python -m tools.server --dry-run
-ROBO=true SIMULADO=true npm run test:funcional
+ROBO=true SIMULADO=true npm run test:braco
 ```
 
 O simulado ainda precisa de celular/emulador e Appium: gera movimentos simulados e aplica gestos
@@ -101,10 +127,10 @@ Os 12 arquivos de `tests/js/tipos/` seguem a ordem da apresentação "Tipos de t
 o mapa do que cada um cobre e do que falta está em [cobertura.md](cobertura.md).
 
 ```bash
-npm run test:mobile -- --spec tests/js/tipos/04-performance.spec.js
-UDID=emulator-5554 npm run test:mobile -- --spec tests/js/tipos/08-interrupcao.spec.js
-DURACAO_MIN=60 npm run test:mobile -- --spec tests/js/tipos/05-resistencia.spec.js
-ROBO=true npm run test:mobile -- --spec tests/js/tipos/02-usabilidade.spec.js
+npm run test:mobile -- --suite performance
+UDID=emulator-5554 npm run test:mobile -- --suite interrupcao
+DURACAO_MIN=60 npm run test:mobile -- --suite resistencia
+ROBO=true npm run test:mobile -- --suite usabilidade
 ```
 
 - Só os tipos 1 e 2 usam o braço com `ROBO=true`; os outros medem o app com gestos por software.
@@ -124,6 +150,8 @@ mesmo aparelho (`toMatchScreenSnapshot`). Na primeira rodada num aparelho, a ref
 `tests/js/visual/referencia/` e o teste passa; versione essas imagens. Nas rodadas seguintes, a
 diferença acima de `VISUAL_DIFERENCA_MAX_PCT` (0,5%) reprova, e a imagem atual e a de diferença
 ficam em `results/wdio/visual/`. A barra de status e a de navegação são cobertas antes de comparar.
+"Localização do ponteiro" e "Mostrar toques" (opções do desenvolvedor) ficam desligadas durante a
+captura (`n.compararTela()`) e voltam ao estado anterior: dá para deixá-las ligadas com o braço.
 Para aceitar uma mudança visual intencional, apague a referência do aparelho e rode de novo.
 
 Limites ficam em `tests/js/support/limits.js` e aceitam variáveis de ambiente com os mesmos nomes
@@ -132,15 +160,9 @@ O soak exige duração/amostras suficientes para regressão; métricas ausentes 
 Bateria carregando fica pendente. Mudanças de rede, orientação, GPS e permissão de câmera têm limpeza
 nos respectivos testes. Há um worker por execução: não execute dois processos contra o mesmo braço.
 
-Variáveis: `APPIUM_URL` (padrão `http://127.0.0.1:4723`), `UDID`, `PYTHON`, `ROBO`, `SIMULADO`,
-`ROBOT_URL` (padrão `http://127.0.0.1:8765`), `RESULTS_DIR` (padrão `results/wdio`), `DURACAO_MIN`.
-Capturas de falhas ficam em `RESULTS_DIR`, CSVs em `RESULTS_DIR/nfr` com escrita por amostra.
-Os gráficos em Python leem esses CSVs:
-
-```bash
-.venv/bin/pip install -e ".[graficos]"
-.venv/bin/python -m tools.graficos --entrada results/wdio/nfr --saida results/wdio/graficos
-```
+Variáveis de execução: veja a tabela no [README](../README.md#parâmetros) ou
+`tests/js/support/env.js`. Capturas de falhas ficam em `RESULTS_DIR`, CSVs em `RESULTS_DIR/nfr`
+com escrita por amostra, e `npm run painel` gera o painel de resultados em HTML.
 
 ## Versões
 
