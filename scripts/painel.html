@@ -1,0 +1,613 @@
+<meta name="dash-one-writer">
+<style>
+  .tm { display: grid; gap: var(--cds-gap-xl); font-family: var(--font-anthropic-sans); color: var(--color-fg); }
+  .tm h1 { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0; text-wrap: balance; }
+  .tm h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; text-wrap: balance; }
+  .tm-eyebrow { margin: 0; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); letter-spacing: .04em; text-transform: uppercase; }
+  .tm-lead { margin: 0; max-width: 68ch; line-height: 1.55; }
+  .tm-note { margin: 0; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); line-height: 1.5; max-width: 72ch; }
+  .tm-head { display: grid; gap: var(--cds-gap-sm); }
+  .tm-sec { display: grid; gap: var(--cds-gap-md); min-width: 0; align-content: start; }
+  .tm-num { font-variant-numeric: tabular-nums; }
+  [data-dash-source-state=refreshing] { opacity: .5; }
+
+  .tm-kpis { display: grid; gap: var(--cds-gap-md); grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+  .tm-kpi { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); display: grid; gap: var(--cds-gap-xs); align-content: start; position: relative; }
+  .tm-kpi::before { content: ""; position: absolute; left: 0; top: var(--cds-pad-lg); bottom: var(--cds-pad-lg); width: 3px; border-radius: 0 2px 2px 0; background: transparent; }
+  .tm-kpi.is-ok::before { background: var(--color-ok); }
+  .tm-kpi.is-bad::before { background: var(--color-bad); }
+  .tm-kpi-label { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .tm-kpi-value { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: 2rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .tm-kpi-unit { font-family: var(--font-anthropic-sans); font-size: var(--cds-font-size-body); color: var(--color-fg-muted); margin-left: .25em; }
+  .tm-kpi-foot { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); font-variant-numeric: tabular-nums; }
+
+  .tm-scroll { overflow-x: auto; min-width: 0; }
+  .tm-table { border-collapse: collapse; width: 100%; font-size: var(--cds-font-size-body); }
+  .tm-table th { text-align: left; font-weight: var(--cds-font-weight-medium); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); padding: var(--cds-pad-sm) var(--cds-pad-md); border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
+  .tm-table td { padding: var(--cds-pad-sm) var(--cds-pad-md); border-bottom: 1px solid var(--color-border-line); vertical-align: top; }
+  .tm-table td.tm-r, .tm-table th.tm-r { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tm-tipo-n { color: var(--color-fg-muted); font-variant-numeric: tabular-nums; margin-right: .5em; }
+  .tm-sub { display: block; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin-top: 2px; }
+
+  .tm-chip { display: inline-flex; align-items: center; gap: .4em; font-size: var(--cds-font-size-caption); white-space: nowrap; }
+  .tm-chip::before { content: ""; width: .6em; height: .6em; border-radius: 50%; background: var(--color-fg-muted); flex: none; }
+  .tm-chip[data-s="aprovado"]::before { background: var(--color-ok); }
+  .tm-chip[data-s="falha conhecida"]::before { background: var(--color-warn); }
+  .tm-chip[data-s="reprovado"]::before { background: var(--color-bad); }
+  .tm-chip[data-s="pulado"]::before, .tm-chip[data-s="não rodou"]::before { background: transparent; border: 1px solid var(--color-fg-muted); }
+
+  .tm-grid2 { display: grid; gap: var(--cds-gap-lg); grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+  .tm-chart { position: relative; min-height: 240px; min-width: 0; }
+  .tm-chart.tm-short { min-height: 200px; }
+  .tm-chart svg { display: block; width: 100%; overflow: visible; }
+  .tm-chart text, .tm-perf text { font-size: 11px; fill: var(--cds-text-secondary); font-family: var(--font-anthropic-sans); }
+  .tm-chart .tm-axis path, .tm-chart .tm-axis line { stroke: var(--cds-chart-axis); }
+  .tm-chart .tm-grid line { stroke: var(--cds-chart-grid); }
+  .tm-chart .tm-grid path { display: none; }
+  .tm-legend { display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: 0; padding: 0; list-style: none; }
+  .tm-legend li { display: inline-flex; align-items: center; gap: .4em; }
+  .tm-sw { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+  .tm-sw-dash { width: 14px; height: 0; border-top: 2px dashed var(--cds-chart-status-critical); display: inline-block; }
+  .tm-tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); box-shadow: var(--cds-shadow-popover); border-radius: var(--cds-radius); padding: var(--cds-pad-sm) var(--cds-pad-md); font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; white-space: nowrap; z-index: 2; }
+  .tm-tip b { font-weight: var(--cds-font-weight-medium); }
+  .tm-fail { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); padding: var(--cds-pad-md) 0; }
+
+  .tm-perf { display: grid; gap: var(--cds-gap-lg); }
+  .tm-perf-row { display: grid; gap: var(--cds-gap-xs); }
+  .tm-perf-title { display: flex; justify-content: space-between; gap: var(--cds-gap-sm); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); flex-wrap: wrap; }
+  .tm-perf-title b { color: var(--color-fg); font-weight: var(--cds-font-weight-medium); }
+  .tm-err { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); display: block; max-width: 48ch; }
+  .tm-details summary { cursor: pointer; font-weight: var(--cds-font-weight-medium); }
+  .tm-details[open] summary { margin-bottom: var(--cds-gap-md); }
+  .tm-details dl { display: grid; grid-template-columns: max-content 1fr; gap: var(--cds-gap-xs) var(--cds-gap-md); margin: 0; font-size: var(--cds-font-size-body); line-height: 1.5; }
+  .tm-details dt { color: var(--color-fg-muted); }
+  .tm-details dd { margin: 0; min-width: 0; }
+  @media (max-width: 520px) { .tm-details dl { grid-template-columns: 1fr; } .tm-details dd { margin-bottom: var(--cds-gap-sm); } }
+</style>
+
+<div class="tm">
+  <header class="tm-head" id="topo">
+    <p class="tm-eyebrow">ApiDemos · WebdriverIO + Appium (UiAutomator2) · 12 tipos de teste</p>
+    <h1>Painel de testes mobile</h1>
+    <p class="tm-lead">No aparelho real (<span data-draw="aparelho" data-source="ultimas_metricas" data-field="aparelho" data-where="dispositivo=Aparelho real&amp;metrica=Início frio p50">—</span>), <b class="tm-num" data-draw="resumo" data-campo="aprovados" data-source="resumo" data-field="aprovados" data-where="dispositivo=Aparelho real">—</b> de <b class="tm-num" data-draw="resumo" data-campo="rodados" data-source="resumo" data-field="rodados" data-where="dispositivo=Aparelho real">—</b> testes passaram. <b class="tm-num" data-draw="resumo" data-campo="conhecidas" data-source="resumo" data-field="conhecidas" data-where="dispositivo=Aparelho real">—</b> reprovaram por falhas conhecidas do ApiDemos e <b class="tm-num" data-draw="resumo" data-campo="reprovados" data-source="resumo" data-field="reprovados" data-where="dispositivo=Aparelho real">—</b> por outros motivos. No soak, a memória cresceu <b class="tm-num" data-draw="kpi-valor" data-source="ultimas_metricas" data-field="valor" data-where="dispositivo=Aparelho real&amp;metrica=Crescimento da memória">—</b> MB/h, contra um limite de <span class="tm-num" data-draw="kpi-limite" data-source="ultimas_metricas" data-field="limite_max" data-where="dispositivo=Aparelho real&amp;metrica=Crescimento da memória">—</span> MB/h.</p>
+  </header>
+
+  <section class="tm-sec" id="destaques">
+    <h2>Aparelho real, última rodada de cada medida</h2>
+    <div class="tm-kpis">
+      <div class="tm-kpi" id="kpi-frio">
+        <span class="tm-kpi-label">Abertura a frio, p50</span>
+        <span class="tm-kpi-value"><span data-draw="kpi-valor" data-source="ultimas_metricas" data-field="valor" data-where="dispositivo=Aparelho real&amp;metrica=Início frio p50">—</span><span class="tm-kpi-unit">ms</span></span>
+        <span class="tm-kpi-foot">limite <span data-draw="kpi-limite" data-source="ultimas_metricas" data-field="limite_max" data-where="dispositivo=Aparelho real&amp;metrica=Início frio p50">—</span> ms</span>
+      </div>
+      <div class="tm-kpi" id="kpi-jank">
+        <span class="tm-kpi-label">Quadros lentos na rolagem (jank)</span>
+        <span class="tm-kpi-value"><span data-draw="kpi-valor" data-source="ultimas_metricas" data-field="valor" data-where="dispositivo=Aparelho real&amp;metrica=Jank">—</span><span class="tm-kpi-unit">%</span></span>
+        <span class="tm-kpi-foot">limite <span data-draw="kpi-limite" data-source="ultimas_metricas" data-field="limite_max" data-where="dispositivo=Aparelho real&amp;metrica=Jank">—</span>%</span>
+      </div>
+      <div class="tm-kpi" id="kpi-alvo">
+        <span class="tm-kpi-label">Menor alvo de toque</span>
+        <span class="tm-kpi-value"><span data-draw="kpi-valor" data-source="ultimas_metricas" data-field="valor" data-where="dispositivo=Aparelho real&amp;metrica=Menor alvo de toque">—</span><span class="tm-kpi-unit">dp</span></span>
+        <span class="tm-kpi-foot">mínimo <span data-draw="kpi-limite" data-source="ultimas_metricas" data-field="limite_min" data-where="dispositivo=Aparelho real&amp;metrica=Menor alvo de toque">—</span> dp</span>
+      </div>
+      <div class="tm-kpi" id="kpi-memoria">
+        <span class="tm-kpi-label">Crescimento da memória no soak</span>
+        <span class="tm-kpi-value"><span data-draw="kpi-valor" data-source="ultimas_metricas" data-field="valor" data-where="dispositivo=Aparelho real&amp;metrica=Crescimento da memória">—</span><span class="tm-kpi-unit">MB/h</span></span>
+        <span class="tm-kpi-foot">limite <span data-draw="kpi-limite" data-source="ultimas_metricas" data-field="limite_max" data-where="dispositivo=Aparelho real&amp;metrica=Crescimento da memória">—</span> MB/h</span>
+      </div>
+      <div class="tm-kpi" id="kpi-bateria">
+        <span class="tm-kpi-label">Consumo de bateria, fora da tomada</span>
+        <span class="tm-kpi-value"><span data-draw="kpi-valor" data-source="ultimas_metricas" data-field="valor" data-where="dispositivo=Aparelho real&amp;metrica=Consumo de bateria">—</span><span class="tm-kpi-unit">%/h</span></span>
+        <span class="tm-kpi-foot">limite <span data-draw="kpi-limite" data-source="ultimas_metricas" data-field="limite_max" data-where="dispositivo=Aparelho real&amp;metrica=Consumo de bateria">—</span> %/h</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="tm-sec" id="matriz">
+    <h2>Os 12 tipos de teste, por aparelho</h2>
+    <p class="tm-note">Última rodada de cada tipo. "Falha conhecida" é um defeito do próprio ApiDemos que o teste encontra e continua reprovando. "Pulado" é um teste que só roda em outro ambiente, como bloqueio de tela no emulador ou rota de GPS no aparelho real.</p>
+    <div class="tm-scroll">
+      <table class="tm-table" data-source="matriz" data-row-key="spec">
+        <thead><tr><th>Tipo</th><th data-field="real">Aparelho real</th><th data-field="emulador">Emulador</th></tr></thead>
+        <tbody data-draw="matriz"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="tm-sec" id="performance">
+    <h2>Desempenho: aparelho real × emulador</h2>
+    <p class="tm-note">Mediana de 10 aberturas (a frio, com o processo encerrado; morna, voltando da tela inicial) e porcentagem de quadros lentos em 20 rolagens. A linha vertical marca o limite de cada medida.</p>
+    <ul class="tm-legend" aria-hidden="true">
+      <li><span class="tm-sw" data-draw="sw" data-i="0"></span>Aparelho real</li>
+      <li><span class="tm-sw" data-draw="sw" data-i="1"></span>Emulador</li>
+      <li><span class="tm-sw-dash"></span>Limite</li>
+    </ul>
+    <div class="tm-perf" data-draw="perf" data-source="ultimas_metricas" role="img" aria-label="Abertura a frio, abertura morna e jank no aparelho real e no emulador, com o limite de cada medida"></div>
+  </section>
+
+  <div class="tm-grid2">
+    <section class="tm-sec" id="soak">
+      <h2>Soak: memória ao longo de 2 h</h2>
+      <p class="tm-note">PSS é a memória total do app. A linha tracejada mostra onde ele estaria crescendo no limite de 20 MB/h a partir do mesmo ponto inicial.</p>
+      <ul class="tm-legend" aria-hidden="true">
+        <li><span class="tm-sw" data-draw="sw" data-i="0"></span>PSS</li>
+        <li><span class="tm-sw" data-draw="sw" data-i="1"></span>Java heap</li>
+        <li><span class="tm-sw" data-draw="sw" data-i="2"></span>Native heap</li>
+        <li><span class="tm-sw-dash"></span>Ritmo do limite</li>
+      </ul>
+      <div class="tm-chart" data-draw="soak" data-source="soak"></div>
+    </section>
+
+    <section class="tm-sec" id="bateria">
+      <h2>Bateria e temperatura: 1 h fora da tomada</h2>
+      <p class="tm-note">Tela acesa com animação contínua, leitura a cada 5 min pelo adb no Wi-Fi. O nível da bateria só muda de 1 em 1%.</p>
+      <ul class="tm-legend" aria-hidden="true">
+        <li><span class="tm-sw" data-draw="sw" data-i="0"></span>Bateria (%)</li>
+        <li><span class="tm-sw" data-draw="sw" data-i="1"></span>Temperatura (°C)</li>
+      </ul>
+      <div class="tm-chart tm-short" data-draw="bateria" data-source="bateria" data-serie="bateria_pct"></div>
+      <div class="tm-chart tm-short" data-draw="bateria" data-source="bateria" data-serie="temperatura_c"></div>
+    </section>
+  </div>
+
+  <section class="tm-sec" id="medidas">
+    <h2>Todas as medidas</h2>
+    <div class="tm-scroll">
+      <table class="tm-table" data-source="ultimas_metricas" data-row-key="dispositivo,metrica">
+        <thead><tr><th>Aparelho</th><th>Tipo</th><th data-field="metrica">Medida</th><th class="tm-r" data-field="valor">Valor</th><th class="tm-r">Limite</th><th data-field="aprovado">Situação</th><th data-field="rodada">Rodada</th></tr></thead>
+        <tbody data-draw="medidas"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="tm-sec" id="testes">
+    <h2>Cada teste, na última rodada</h2>
+    <div class="tm-scroll">
+      <table class="tm-table" data-source="ultimos_testes" data-row-key="spec,teste">
+        <thead><tr><th>Tipo</th><th data-field="teste">Teste</th><th data-field="real">Aparelho real</th><th data-field="emulador">Emulador</th></tr></thead>
+        <tbody data-draw="testes"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <details class="tm-details" id="como">
+    <summary>Como os testes medem</summary>
+    <dl>
+      <dt>Ferramentas</dt><dd>WebdriverIO 10 com Mocha, Appium 3 com o driver UiAutomator2, comandos <code>mobile:</code> do Appium e <code>adb shell</code>. Teste visual com @wdio/visual-service.</dd>
+      <dt>Abertura</dt><dd><code>am start -W</code>, 10 vezes; a frio encerra o processo antes, a morna volta da tela inicial.</dd>
+      <dt>Jank</dt><dd><code>dumpsys gfxinfo</code> depois de 20 rolagens, com pelo menos 30 quadros.</dd>
+      <dt>Soak</dt><dd>Laço por três telas; a cada ciclo lê PSS, heaps e threads (<code>dumpsys meminfo</code>, <code>/proc</code>). O crescimento é a inclinação da reta (regressão linear).</dd>
+      <dt>Bateria</dt><dd><code>dumpsys battery</code> e <code>dumpsys thermalservice</code> a cada 5 min, com o aparelho fora da tomada e o adb pelo Wi-Fi.</dd>
+      <dt>Alvo de toque</dt><dd>Tamanho de cada item do menu (<code>getElementRect</code>) convertido para dp com <code>mobile: getDisplayDensity</code>.</dd>
+      <dt>Interrupções e sensores</dt><dd><code>mobile: gsmCall</code>, <code>sendSms</code>, <code>backgroundApp</code>, <code>lock</code>, <code>setConnectivity</code>, <code>networkSpeed</code>, <code>setGeolocation</code>, <code>sensorSet</code>, <code>changePermissions</code>, <code>sendTrimMemory</code>, <code>activateApp</code>.</dd>
+      <dt>Visual</dt><dd>Cada tela comparada com a referência do mesmo aparelho, com até 0,5% de diferença e as barras do sistema escondidas.</dd>
+    </dl>
+  </details>
+</div>
+
+<script>
+  const NOMES = {
+    "01-funcional": ["1", "Funcional"],
+    "02-usabilidade": ["2", "Usabilidade"],
+    "03-acessibilidade": ["3", "Acessibilidade"],
+    "04-performance": ["4", "Performance"],
+    "05-resistencia": ["5", "Resistência (soak)"],
+    "06-bateria-temperatura": ["6", "Bateria e temperatura"],
+    "07-conectividade": ["7", "Conectividade"],
+    "08-interrupcao": ["8", "Interrupção"],
+    "09-concorrencia": ["9", "Concorrência"],
+    "10-sensores-localizacao": ["10", "Sensores e localização"],
+    "11-compatibilidade": ["11", "Compatibilidade"],
+    "12-seguranca": ["12", "Segurança"],
+  };
+  const PT = d3.formatLocale({ decimal: ",", thousands: ".", grouping: [3], currency: ["R$", ""] });
+  const fmtNum = (v) => {
+    if (v == null || !Number.isFinite(v)) return "—";
+    const a = Math.abs(v);
+    return PT.format(a >= 100 ? ",.0f" : a >= 10 ? ",.1~f" : ",.2~f")(v);
+  };
+  const tipoDe = (spec) => NOMES[spec] || [spec.slice(0, 2).replace(/^0/, ""), spec.slice(3)];
+  const onde = (el) => {
+    const out = {};
+    for (const par of (el.dataset.where || "").split("&")) {
+      const i = par.indexOf("=");
+      if (i > 0) out[decodeURIComponent(par.slice(0, i))] = decodeURIComponent(par.slice(i + 1));
+    }
+    return out;
+  };
+  const linhaDe = (rows, el) => {
+    const w = onde(el);
+    return rows.find((r) => Object.keys(w).every((k) => String(r[k]) === w[k]));
+  };
+
+  dash.calc("ultimas_metricas", {
+    inputs: ["metricas"],
+    title: "Última medida de cada métrica",
+    description: "Para cada aparelho (real ou emulador) e cada métrica, o valor da rodada mais recente.",
+    fn: (metricas) => {
+      const ultima = new Map();
+      for (const r of metricas) {
+        const dispositivo = r.emulador === "sim" ? "Emulador" : "Aparelho real";
+        const chave = dispositivo + "|" + r.metrica;
+        const atual = ultima.get(chave);
+        if (!atual || r.data_hora > atual.data_hora) ultima.set(chave, { ...r, dispositivo });
+      }
+      const num = (v) => (v === "" || v == null ? null : Number(v));
+      return [...ultima.values()]
+        .map((r) => ({
+          dispositivo: r.dispositivo,
+          metrica: r.metrica,
+          aparelho: r.aparelho,
+          android: r.android,
+          spec: r.spec,
+          valor: num(r.valor),
+          unidade: r.unidade,
+          limite_min: num(r.limite_min),
+          limite_max: num(r.limite_max),
+          aprovado: r.aprovado,
+          rodada: r.rodada,
+        }))
+        .sort((a, b) => a.dispositivo.localeCompare(b.dispositivo) || a.spec.localeCompare(b.spec) || a.metrica.localeCompare(b.metrica));
+    },
+  });
+
+  dash.calc("ultimos_testes", {
+    inputs: ["testes"],
+    title: "Resultado de cada teste na última rodada",
+    description: "Para cada aparelho e tipo, o resultado de cada teste na rodada mais recente daquele tipo. Reprovação marcada no título como falha conhecida vira 'falha conhecida'.",
+    fn: (testes) => {
+      const qual = (r) => (r.emulador === "sim" ? "emulador" : "real");
+      const ultimaRodada = new Map();
+      for (const r of testes) {
+        const k = qual(r) + "|" + r.spec;
+        if (!ultimaRodada.has(k) || r.rodada > ultimaRodada.get(k)) ultimaRodada.set(k, r.rodada);
+      }
+      const linhas = new Map();
+      for (const r of testes) {
+        const d = qual(r);
+        if (r.rodada !== ultimaRodada.get(d + "|" + r.spec)) continue;
+        const k = r.spec + "|" + r.teste;
+        const l = linhas.get(k) || { spec: r.spec, teste: r.teste, real: "", emulador: "", erro_real: "", erro_emulador: "" };
+        const situacao = r.status === "reprovado" && r.teste.includes("falha conhecida") ? "falha conhecida" : r.status;
+        l[d] = situacao;
+        l["erro_" + d] = r.erro || "";
+        linhas.set(k, l);
+      }
+      return [...linhas.values()].sort((a, b) => a.spec.localeCompare(b.spec));
+    },
+  });
+
+  dash.calc("resumo", {
+    inputs: ["ultimos_testes"],
+    title: "Totais por aparelho",
+    description: "Quantos testes passaram, reprovaram (por falha conhecida ou não) e foram pulados em cada aparelho, na última rodada de cada tipo.",
+    fn: (ultimos_testes) =>
+      [["Aparelho real", "real"], ["Emulador", "emulador"]].map(([dispositivo, campo]) => {
+        const s = ultimos_testes.map((t) => t[campo]).filter(Boolean);
+        const conta = (x) => s.filter((v) => v === x).length;
+        return {
+          dispositivo,
+          aprovados: conta("aprovado"),
+          conhecidas: conta("falha conhecida"),
+          reprovados: conta("reprovado"),
+          pulados: conta("pulado"),
+          rodados: s.length - conta("pulado"),
+        };
+      }),
+  });
+
+  dash.calc("matriz", {
+    inputs: ["ultimos_testes"],
+    title: "Situação de cada tipo por aparelho",
+    description: "Reprovado se algum teste reprovou; falha conhecida se só reprovaram falhas conhecidas; aprovado se ao menos um passou e nenhum reprovou; pulado se todos foram pulados.",
+    fn: (ultimos_testes) => {
+      const porSpec = d3.group(ultimos_testes, (t) => t.spec);
+      const situacao = (s) =>
+        s.length === 0 ? "não rodou"
+        : s.includes("reprovado") ? "reprovado"
+        : s.includes("falha conhecida") ? "falha conhecida"
+        : s.includes("aprovado") ? "aprovado"
+        : "pulado";
+      return [...porSpec].map(([spec, ts]) => {
+        const linha = { spec };
+        for (const d of ["real", "emulador"]) {
+          const s = ts.map((t) => t[d]).filter(Boolean);
+          linha[d] = situacao(s);
+          linha[d + "_aprovados"] = s.filter((v) => v === "aprovado").length;
+          linha[d + "_rodados"] = s.filter((v) => v !== "pulado").length;
+        }
+        return linha;
+      });
+    },
+  });
+
+  // Cores das legendas, as mesmas das séries.
+  dash.draw("sw", (el) => {
+    el.style.background = dash.colors[+el.dataset.i] || "currentColor";
+  });
+
+  dash.draw("aparelho", (el) => {
+    const d = dash.data("ultimas_metricas");
+    const r = d.status === "ok" ? linhaDe(d.data, el) : null;
+    el.textContent = r ? `${r.aparelho}, Android ${r.android}` : "—";
+  });
+
+  dash.draw("resumo", (el) => {
+    const d = dash.data("resumo");
+    const r = d.status === "ok" ? linhaDe(d.data, el) : null;
+    el.textContent = r ? String(r[el.dataset.campo]) : "—";
+  });
+
+  dash.draw("kpi-valor", (el) => {
+    const d = dash.data("ultimas_metricas");
+    const r = d.status === "ok" ? linhaDe(d.data, el) : null;
+    el.textContent = r ? fmtNum(r.valor) : "—";
+    const card = el.closest(".tm-kpi");
+    if (card) {
+      card.classList.toggle("is-ok", !!r && r.aprovado === "sim");
+      card.classList.toggle("is-bad", !!r && r.aprovado !== "sim");
+    }
+  });
+
+  dash.draw("kpi-limite", (el) => {
+    const d = dash.data("ultimas_metricas");
+    const r = d.status === "ok" ? linhaDe(d.data, el) : null;
+    el.textContent = r ? fmtNum(r[el.dataset.field]) : "—";
+  });
+
+  function chip(td, s, detalhe) {
+    td.replaceChildren();
+    const c = document.createElement("span");
+    c.className = "tm-chip";
+    c.dataset.s = s;
+    c.textContent = s;
+    td.append(c);
+    if (detalhe) {
+      const sub = document.createElement("span");
+      sub.className = "tm-sub";
+      sub.textContent = detalhe;
+      td.append(sub);
+    }
+  }
+
+  function celulaTipo(tr, spec) {
+    const td = tr.insertCell();
+    const [n, nome] = tipoDe(spec);
+    const num = document.createElement("span");
+    num.className = "tm-tipo-n";
+    num.textContent = n;
+    td.append(num, nome);
+  }
+
+  dash.draw("matriz", (tbody) => {
+    const d = dash.data("matriz");
+    tbody.replaceChildren();
+    if (d.status !== "ok") return;
+    const porSpec = new Map(d.data.map((r) => [r.spec, r]));
+    for (const spec of Object.keys(NOMES)) {
+      const r = porSpec.get(spec);
+      const tr = tbody.insertRow();
+      celulaTipo(tr, spec);
+      for (const k of ["real", "emulador"]) {
+        const td = tr.insertCell();
+        if (!r) { chip(td, "não rodou"); continue; }
+        const rod = r[k + "_rodados"];
+        chip(td, r[k], rod ? `${r[k + "_aprovados"]} de ${rod} passaram` : "");
+      }
+    }
+  });
+
+  dash.draw("medidas", (tbody) => {
+    const d = dash.data("ultimas_metricas");
+    tbody.replaceChildren();
+    if (d.status !== "ok") return;
+    for (const r of d.data) {
+      const tr = tbody.insertRow();
+      tr.dataset.key = [r.dispositivo, r.metrica].map(encodeURIComponent).join(",");
+      tr.insertCell().textContent = r.dispositivo;
+      celulaTipo(tr, r.spec);
+      tr.insertCell().textContent = r.metrica;
+      const v = tr.insertCell();
+      v.className = "tm-r";
+      v.textContent = `${fmtNum(r.valor)} ${r.unidade}`;
+      const lim = tr.insertCell();
+      lim.className = "tm-r";
+      lim.textContent = [r.limite_min != null ? `≥ ${fmtNum(r.limite_min)}` : "", r.limite_max != null ? `≤ ${fmtNum(r.limite_max)}` : ""].filter(Boolean).join(" ") + (r.limite_min != null || r.limite_max != null ? ` ${r.unidade}` : "—");
+      chip(tr.insertCell(), r.aprovado === "sim" ? "aprovado" : "reprovado");
+      tr.insertCell().textContent = r.rodada;
+    }
+  });
+
+  dash.draw("testes", (tbody) => {
+    const d = dash.data("ultimos_testes");
+    tbody.replaceChildren();
+    if (d.status !== "ok") return;
+    for (const r of d.data) {
+      const tr = tbody.insertRow();
+      tr.dataset.key = [r.spec, r.teste].map(encodeURIComponent).join(",");
+      celulaTipo(tr, r.spec);
+      tr.insertCell().textContent = r.teste;
+      for (const k of ["real", "emulador"]) {
+        const td = tr.insertCell();
+        if (!r[k]) { chip(td, "não rodou"); continue; }
+        chip(td, r[k], r[k] === "reprovado" || r[k] === "falha conhecida" ? r["erro_" + k] : "");
+      }
+    }
+  });
+
+  function dica(box) {
+    let tip = box.querySelector(".tm-tip");
+    if (!tip) {
+      tip = document.createElement("div");
+      tip.className = "tm-tip";
+      tip.hidden = true;
+      box.append(tip);
+    }
+    return {
+      show(linhas, x, y) {
+        tip.replaceChildren(...linhas.map(([rot, val]) => {
+          const p = document.createElement("div");
+          if (rot) { const b = document.createElement("b"); b.textContent = rot + " "; p.append(b); }
+          p.append(val);
+          return p;
+        }));
+        tip.hidden = false;
+        const w = tip.offsetWidth, h = tip.offsetHeight, W = box.clientWidth;
+        tip.style.left = Math.max(0, Math.min(W - w, x + 12)) + "px";
+        tip.style.top = Math.max(0, y - h - 8) + "px";
+      },
+      hide() { tip.hidden = true; },
+    };
+  }
+
+  function falhou(el, d) {
+    el.replaceChildren();
+    if (d.status === "error" || d.status === "missing") {
+      const p = document.createElement("p");
+      p.className = "tm-fail";
+      p.textContent = "Não carregou";
+      el.append(p);
+    }
+  }
+
+  dash.draw("perf", (el) => {
+    const d = dash.data("ultimas_metricas");
+    if (d.status !== "ok") return falhou(el, d);
+    el.replaceChildren();
+    const medidas = [
+      ["Início frio p50", "Abertura a frio, p50", "ms"],
+      ["Início morno p50", "Abertura morna, p50", "ms"],
+      ["Jank", "Quadros lentos na rolagem", "%"],
+    ];
+    const W = el.clientWidth || 600;
+    const tip = dica(el);
+    for (const [metrica, rotulo, un] of medidas) {
+      const linhas = ["Aparelho real", "Emulador"].map((disp) => d.data.find((r) => r.dispositivo === disp && r.metrica === metrica));
+      const limite = linhas.find((r) => r && r.limite_max != null)?.limite_max;
+      const row = document.createElement("div");
+      row.className = "tm-perf-row";
+      const t = document.createElement("div");
+      t.className = "tm-perf-title";
+      const b = document.createElement("b");
+      b.textContent = rotulo;
+      const s = document.createElement("span");
+      s.textContent = limite != null ? `limite ${fmtNum(limite)} ${un}` : "";
+      t.append(b, s);
+      row.append(t);
+      const barH = 18, gap = 6, labelW = 96, H = 2 * barH + gap;
+      const max = d3.max([...linhas.map((r) => r?.valor ?? 0), limite ?? 0]) * 1.08 || 1;
+      const x = d3.scaleLinear().domain([0, max]).range([labelW, W - 64]);
+      const svg = d3.create("svg").attr("viewBox", `0 0 ${W} ${H}`).attr("height", H).attr("role", "img")
+        .attr("aria-label", `${rotulo}: ` + linhas.map((r, i) => `${i ? "emulador" : "aparelho real"} ${r ? fmtNum(r.valor) : "sem medida"} ${un}`).join(", "));
+      linhas.forEach((r, i) => {
+        const y = i * (barH + gap);
+        svg.append("text").attr("x", 0).attr("y", y + barH / 2).attr("dy", "0.35em").text(i ? "Emulador" : "Aparelho real");
+        if (!r) {
+          svg.append("text").attr("x", labelW).attr("y", y + barH / 2).attr("dy", "0.35em").text("sem medida");
+          return;
+        }
+        svg.append("rect").attr("x", labelW).attr("y", y).attr("height", barH).attr("rx", 3)
+          .attr("width", Math.max(1, x(r.valor) - labelW))
+          .style("fill", r.aprovado === "sim" ? dash.colors[i] : "var(--cds-chart-status-critical)")
+          .on("pointermove", (ev) => {
+            const [mx, my] = d3.pointer(ev, el);
+            tip.show([[r.dispositivo, `${fmtNum(r.valor)} ${un}`], ["Rodada", r.rodada]], mx, my);
+          })
+          .on("pointerleave", () => tip.hide());
+        svg.append("text").attr("x", x(r.valor) + 6).attr("y", y + barH / 2).attr("dy", "0.35em")
+          .style("fill", "var(--color-fg)").text(`${fmtNum(r.valor)} ${un}`);
+      });
+      if (limite != null)
+        svg.append("line").attr("x1", x(limite)).attr("x2", x(limite)).attr("y1", -2).attr("y2", H + 2)
+          .style("stroke", "var(--cds-chart-status-critical)").style("stroke-dasharray", "4 3").style("stroke-width", 2);
+      row.append(svg.node());
+      el.append(row);
+    }
+  });
+
+  function linhas(el, { rows, x, series, yLabel, yDomain, extra, eixoX }) {
+    el.replaceChildren();
+    const W = el.clientWidth || 600, H = Math.max(180, el.clientHeight || 220);
+    const m = { top: 10, right: 16, bottom: 30, left: 44 };
+    const sx = d3.scaleLinear().domain(d3.extent(rows, x)).range([m.left, W - m.right]);
+    const sy = d3.scaleLinear().domain(yDomain).nice().range([H - m.bottom, m.top]);
+    const svg = d3.create("svg").attr("viewBox", `0 0 ${W} ${H}`).attr("height", H).attr("role", "img").attr("aria-label", yLabel);
+    svg.append("g").attr("class", "tm-grid").attr("transform", `translate(${m.left},0)`)
+      .call(d3.axisLeft(sy).ticks(5).tickSize(-(W - m.left - m.right)).tickFormat(""));
+    svg.append("g").attr("class", "tm-axis").attr("transform", `translate(${m.left},0)`)
+      .call(d3.axisLeft(sy).ticks(5).tickFormat((v) => PT.format(",~f")(v)));
+    svg.append("g").attr("class", "tm-axis").attr("transform", `translate(0,${H - m.bottom})`)
+      .call(d3.axisBottom(sx).ticks(Math.max(2, Math.floor(W / 90))).tickFormat(eixoX));
+    if (extra) extra(svg, sx, sy);
+    series.forEach((s, i) => {
+      const pts = rows.filter((r) => Number.isFinite(s.y(r)));
+      const cor = dash.colors[s.cor ?? i];
+      svg.append("path").datum(pts).attr("fill", "none").style("stroke", cor).style("stroke-width", i ? 1.5 : 2.2)
+        .attr("d", d3.line().x((r) => sx(x(r))).y((r) => sy(s.y(r))));
+      const ult = pts[pts.length - 1];
+      if (ult) svg.append("circle").attr("cx", sx(x(ult))).attr("cy", sy(s.y(ult))).attr("r", 3.5).style("fill", cor);
+    });
+    const guia = svg.append("line").attr("y1", m.top).attr("y2", H - m.bottom).style("stroke", "var(--cds-chart-reference)").style("display", "none");
+    const tip = dica(el);
+    svg.append("rect").attr("x", m.left).attr("y", m.top).attr("width", W - m.left - m.right).attr("height", H - m.top - m.bottom)
+      .style("fill", "transparent")
+      .on("pointermove", (ev) => {
+        const [px] = d3.pointer(ev);
+        const alvo = sx.invert(px);
+        const r = rows[d3.minIndex(rows, (q) => Math.abs(x(q) - alvo))];
+        if (!r) return;
+        guia.attr("x1", sx(x(r))).attr("x2", sx(x(r))).style("display", null);
+        const [mx, my] = d3.pointer(ev, el);
+        tip.show([["", eixoX(x(r))], ...series.map((s) => [s.nome, `${fmtNum(s.y(r))} ${s.un}`])], mx, my);
+      })
+      .on("pointerleave", () => { guia.style("display", "none"); tip.hide(); });
+    el.append(svg.node());
+  }
+
+  const horaMin = (h) => {
+    const t = Math.round(h * 60);
+    return t >= 60 ? `${Math.floor(t / 60)} h ${String(t % 60).padStart(2, "0")}` : `${t} min`;
+  };
+
+  dash.draw("soak", (el) => {
+    const d = dash.data("soak");
+    if (d.status !== "ok") return falhou(el, d);
+    const rows = d.data.map((r) => ({ h: +r.horas, pss: +r.pss_mb, java: +r.java_heap_mb, nat: +r.native_heap_mb })).filter((r) => Number.isFinite(r.h) && Number.isFinite(r.pss));
+    if (!rows.length) return falhou(el, d);
+    const LIMITE_MB_H = 20;
+    const ini = rows[0], fim = rows[rows.length - 1];
+    linhas(el, {
+      rows,
+      x: (r) => r.h,
+      eixoX: horaMin,
+      yLabel: `Memória do app no soak de ${horaMin(fim.h)}: PSS de ${fmtNum(ini.pss)} para ${fmtNum(fim.pss)} MB`,
+      yDomain: [0, d3.max([fim.pss, ini.pss + LIMITE_MB_H * fim.h, d3.max(rows, (r) => r.pss)])],
+      series: [
+        { nome: "PSS", un: "MB", y: (r) => r.pss },
+        { nome: "Java heap", un: "MB", y: (r) => r.java },
+        { nome: "Native heap", un: "MB", y: (r) => r.nat },
+      ],
+      extra: (svg, sx, sy) => svg.append("line")
+        .attr("x1", sx(ini.h)).attr("y1", sy(ini.pss)).attr("x2", sx(fim.h)).attr("y2", sy(ini.pss + LIMITE_MB_H * (fim.h - ini.h)))
+        .style("stroke", "var(--cds-chart-status-critical)").style("stroke-dasharray", "5 4").style("stroke-width", 1.5),
+    });
+  });
+
+  dash.draw("bateria", (el) => {
+    const d = dash.data("bateria");
+    if (d.status !== "ok") return falhou(el, d);
+    const campo = el.dataset.serie;
+    const rows = d.data.map((r) => ({ h: +r.horas, v: +r[campo] })).filter((r) => Number.isFinite(r.h) && Number.isFinite(r.v));
+    if (!rows.length) return falhou(el, d);
+    const bat = campo === "bateria_pct";
+    const [lo, hi] = d3.extent(rows, (r) => r.v);
+    linhas(el, {
+      rows,
+      x: (r) => r.h,
+      eixoX: horaMin,
+      yLabel: bat ? `Bateria de ${fmtNum(rows[0].v)}% para ${fmtNum(rows[rows.length - 1].v)}%` : `Temperatura entre ${fmtNum(lo)} e ${fmtNum(hi)} °C`,
+      yDomain: bat ? [Math.min(lo - 2, 95), 100] : [Math.floor(lo - 3), Math.ceil(hi + 3)],
+      series: [bat ? { nome: "Bateria", un: "%", y: (r) => r.v, cor: 0 } : { nome: "Temperatura", un: "°C", y: (r) => r.v, cor: 1 }],
+    });
+  });
+</script>

@@ -16,7 +16,8 @@
     "check": "node scripts/check.js",
     "lint": "prettier --check \"tests/js/**/*.js\" \"scripts/*.js\" wdio.conf.js",
     "format": "prettier --write \"tests/js/**/*.js\" \"scripts/*.js\" wdio.conf.js",
-    "test:dry-run": "mocha --dry-run \"tests/js/{tipos,outros-apps}/*.spec.js\""
+    "test:dry-run": "mocha --dry-run \"tests/js/{tipos,outros-apps}/*.spec.js\"",
+    "painel": "node scripts/painel.js"
   },
   "devDependencies": {
     "@wdio/cli": "10.1.0",
@@ -24,6 +25,7 @@
     "@wdio/mocha-framework": "10.1.0",
     "@wdio/spec-reporter": "10.1.0",
     "@wdio/visual-service": "11.1.0",
+    "d3": "7.9.0",
     "jest": "^30.0.0",
     "mocha": "^12.0.3",
     "prettier": "^3.9.10",
