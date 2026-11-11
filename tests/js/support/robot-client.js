@@ -1,9 +1,8 @@
 // Cliente HTTP do servidor do braço (python -m tools.server).
+const { env } = require("./env");
+
 class RobotClient {
-  constructor(
-    url = process.env.ROBOT_URL || "http://127.0.0.1:8765",
-    request = fetch,
-  ) {
+  constructor(url = env.robotUrl, request = fetch) {
     this.url = url;
     this.request = request;
   }

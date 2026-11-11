@@ -1,13 +1,15 @@
 // Page object do ApiDemos. Os toques passam por Gestures (software, braço ou simulado).
 const { resourceId } = require("../support/apps");
 const id = (name) => resourceId("apidemos", name);
+/** Cada item de lista das telas do ApiDemos (inclusive o menu inicial). */
+const ITENS_DO_MENU = "id=android:id/text1";
 
 class ApiDemosPage {
   constructor(driver, gestures) {
     Object.assign(this, { driver, gestures });
   }
   async waitVisible(selector) {
-    await (await this.driver.$(selector)).waitForDisplayed({ timeout: 10000 });
+    await (await this.driver.$(selector)).waitForDisplayed();
   }
   async home() {
     await this.waitVisible("~Views");
@@ -39,4 +41,4 @@ class ApiDemosPage {
     return el.getText();
   }
 }
-module.exports = { ApiDemosPage };
+module.exports = { ApiDemosPage, ITENS_DO_MENU };

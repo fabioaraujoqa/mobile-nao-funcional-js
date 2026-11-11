@@ -6,23 +6,19 @@
 //              A 1ª rodada num aparelho novo grava a referência em tests/js/visual/referencia/;
 //              as seguintes comparam. Diferenças ficam em results/wdio/visual/.
 // Appium:      mobile: deviceInfo · capabilities (udid, platformVersion) ·
-//              toMatchScreenSnapshot (@wdio/visual-service)
+//              n.compararTela() → toMatchScreenSnapshot (@wdio/visual-service)
 const assert = require("node:assert/strict");
-const { Nfr } = require("../support/nfr");
+const { prepararSuite } = require("../support/suite");
 const { ApiDemosPage } = require("../pages/apidemos");
-const { ondeRodar } = require("../support/ambiente");
-const L = require("../support/limits");
 
 describe("11 · Compatibilidade: igual em cada aparelho", () => {
-  let n, page;
+  const n = prepararSuite();
+  let page;
   before(async () => {
-    n = new Nfr(browser, gestures);
     page = new ApiDemosPage(browser, gestures);
-    await n.prepare();
     // As referências são em retrato; um teste anterior pode ter deixado a tela deitada.
     await browser.setOrientation("PORTRAIT");
   });
-  beforeEach(ondeRodar);
 
   it("Registra quem é o aparelho da rodada", async () => {
     const d = await n.mobile("deviceInfo");
@@ -41,18 +37,12 @@ describe("11 · Compatibilidade: igual em cada aparelho", () => {
 
   it("Tela inicial igual à referência deste aparelho", async () => {
     await page.home();
-    await expect(browser).toMatchScreenSnapshot(
-      "inicio",
-      L.VISUAL_DIFERENCA_MAX_PCT,
-    );
+    await n.compararTela("inicio");
   });
 
   it("Tela Views igual à referência deste aparelho", async () => {
     await page.openViews();
-    await expect(browser).toMatchScreenSnapshot(
-      "views",
-      L.VISUAL_DIFERENCA_MAX_PCT,
-    );
+    await n.compararTela("views");
     await browser.back();
   });
 });

@@ -40,3 +40,47 @@ test("rolagem usa os gestos injetados", async () => {
   await n.scroll();
   expect(swipe).toHaveBeenCalledWith(50, 800, 50, 200, 0.3);
 });
+test("comConfiguracao devolve o valor anterior mesmo se a ação falhar", async () => {
+  const n = new Nfr({});
+  const comandos = [];
+  n.shell = jest.fn(
+    async (c) => (comandos.push(c), c.includes(" get ") ? "1.0\n" : ""),
+  );
+  await expect(
+    n.comConfiguracao("system", "font_scale", 1.3, async () => {
+      throw Error("falhou");
+    }),
+  ).rejects.toThrow("falhou");
+  expect(comandos).toEqual([
+    "settings get system font_scale",
+    "settings put system font_scale 1.3",
+    "settings put system font_scale 1.0",
+  ]);
+});
+test("comConfiguracao apaga a configuração que não existia antes", async () => {
+  const n = new Nfr({});
+  n.shell = jest.fn(async (c) => (c.includes(" get ") ? "null" : ""));
+  expect(
+    await n.comConfiguracao(
+      "global",
+      "always_finish_activities",
+      1,
+      async () => 7,
+    ),
+  ).toBe(7);
+  expect(n.shell).toHaveBeenLastCalledWith(
+    "settings delete global always_finish_activities",
+  );
+});
+test("sem argumentos, usa os globais do WebdriverIO na hora do uso", () => {
+  const n = new Nfr();
+  global.browser = { id: "b" };
+  global.gestures = { id: "g" };
+  try {
+    expect(n.driver.id).toBe("b");
+    expect(n.gestures.id).toBe("g");
+  } finally {
+    delete global.browser;
+    delete global.gestures;
+  }
+});

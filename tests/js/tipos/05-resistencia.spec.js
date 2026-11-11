@@ -5,10 +5,9 @@
 // Onde rodar:  mesa (aparelho real). Relatórios longos: motor soak/ em Python.
 // Appium:      mobile: shell (dumpsys meminfo · /proc) · BACK
 // Se um teto estourar no meio, o laço para, as métricas são gravadas e só então o teste reprova.
-const { Nfr } = require("../support/nfr");
+const { prepararSuite } = require("../support/suite");
 const { memorySlope } = require("../support/metrics");
 const { registrar } = require("../support/indicadores");
-const { ondeRodar } = require("../support/ambiente");
 const L = require("../support/limits");
 
 const TELAS = [
@@ -23,12 +22,10 @@ const TETOS = [
 ];
 
 describe("5 · Resistência: aguenta horas de uso", () => {
-  beforeEach(ondeRodar);
+  const n = prepararSuite();
 
   it("Memória estável durante a navegação [longo]", async function () {
     this.timeout((L.DURACAO_MIN + 10) * 60000);
-    const n = new Nfr(browser, gestures);
-    await n.prepare();
     const start = Date.now(),
       end = start + L.DURACAO_MIN * 60000;
     let base = await n.baseline(),

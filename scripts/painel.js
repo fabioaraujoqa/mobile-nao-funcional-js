@@ -7,11 +7,10 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
+const { env } = require("../tests/js/support/env");
+
 const raiz = path.resolve(__dirname, "..");
-const resultados = path.resolve(
-  raiz,
-  process.env.RESULTS_DIR || "results/wdio",
-);
+const resultados = path.resolve(raiz, env.resultados);
 const saida = path.resolve(
   process.argv[2] || path.join(resultados, "painel.html"),
 );

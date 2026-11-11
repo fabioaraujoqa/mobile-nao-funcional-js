@@ -26,10 +26,7 @@ class AddNumberPage {
     let actual;
     await this.driver.waitUntil(
       async () => (actual = await label.getText()) === expected,
-      {
-        timeout: 10000,
-        timeoutMsg: `Resultado esperado "${expected}", obtido "${actual}"`,
-      },
+      { timeoutMsg: `Resultado esperado "${expected}", obtido "${actual}"` },
     );
   }
 }

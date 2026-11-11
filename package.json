@@ -1,22 +1,24 @@
 {
-  "name": "tap-robot-tests",
+  "name": "mobile-nao-funcional-js",
   "version": "0.1.0",
   "private": true,
-  "description": "Testes Android WebdriverIO e integração com o braço Python",
+  "description": "Os 12 tipos de teste mobile com WebdriverIO + Appium, e um braço robótico para o toque físico",
   "engines": {
     "node": ">=22.19.0"
   },
   "scripts": {
     "test": "jest --runInBand",
     "test:mobile": "wdio run wdio.conf.js",
-    "test:funcional": "wdio run wdio.conf.js --suite funcional",
-    "test:nfr": "wdio run wdio.conf.js --suite nfr",
     "test:tipos": "wdio run wdio.conf.js --suite tipos",
+    "test:rapidos": "wdio run wdio.conf.js --suite rapidos",
+    "test:longos": "wdio run wdio.conf.js --suite longos",
+    "test:braco": "wdio run wdio.conf.js --suite braco",
+    "test:funcional": "wdio run wdio.conf.js --suite funcional",
     "test:addnumber": "wdio run wdio.conf.js --suite addnumber",
+    "test:dry-run": "mocha --dry-run \"tests/js/{tipos,outros-apps}/*.spec.js\"",
     "check": "node scripts/check.js",
     "lint": "prettier --check \"tests/js/**/*.js\" \"scripts/*.js\" wdio.conf.js",
     "format": "prettier --write \"tests/js/**/*.js\" \"scripts/*.js\" wdio.conf.js",
-    "test:dry-run": "mocha --dry-run \"tests/js/{tipos,outros-apps}/*.spec.js\"",
     "painel": "node scripts/painel.js"
   },
   "devDependencies": {

@@ -10,8 +10,9 @@
 //              setOrientation
 // Falhas conhecidas do ApiDemos ficam marcadas no título e não viram aprovação.
 const assert = require("node:assert/strict");
-const { Nfr, PACKAGE } = require("../support/nfr");
-const { ondeRodar, ambienteAtual } = require("../support/ambiente");
+const { PACKAGE } = require("../support/nfr");
+const { prepararSuite } = require("../support/suite");
+const { ambienteAtual } = require("../support/ambiente");
 const L = require("../support/limits");
 
 const CAMERA = "android.permission.CAMERA";
@@ -21,17 +22,30 @@ const PEDIR_GPS =
   "am broadcast -a io.appium.settings.location -n io.appium.settings/.receivers.LocationInfoReceiver";
 
 describe("10 · Sensores e localização: usa e sobrevive às falhas", () => {
-  let n;
-  before(async () => {
-    n = new Nfr(browser, gestures);
-    await n.prepare();
-    await n.shell(PEDIR_GPS);
-  });
+  const n = prepararSuite();
+  before(() => n.shell(PEDIR_GPS));
   after(async () => {
     // resetGeolocation não existe no emulador; lá a posição simulada some ao reiniciá-lo.
-    if (n && !ambienteAtual().emulador) await n.mobile("resetGeolocation");
+    if (!ambienteAtual().emulador) await n.mobile("resetGeolocation");
   });
-  beforeEach(ondeRodar);
+
+  /** Uma linha no CSV da câmera: o processo atual e os crashes desde a referência. */
+  async function registrarCamera(caso, repeticao, base) {
+    n.csv.write("camera", {
+      caso,
+      repeticao,
+      pid: await n.pid(),
+      crashes: (await n.crashes()) - base.crashes,
+    });
+  }
+
+  /** Muda a permissão de câmera do ApiDemos ("grant" ou "revoke"). */
+  const permissaoCamera = (action) =>
+    n.mobile("changePermissions", {
+      permissions: CAMERA,
+      appPackage: PACKAGE,
+      action,
+    });
 
   describe("GPS", () => {
     async function posicao(caso, latitude, longitude) {
@@ -110,41 +124,23 @@ describe("10 · Sensores e localização: usa e sobrevive às falhas", () => {
         await browser.pause(2000);
         await browser.back();
         await browser.pause(1000);
-        n.csv.write("camera", {
-          caso: "repeticoes",
-          repeticao: i,
-          pid: await n.pid(),
-          crashes: (await n.crashes()) - base.crashes,
-        });
+        await registrarCamera("repeticoes", i, base);
       }
       await n.alive(base);
     });
 
     it("Permissão de câmera negada não derruba o app [falha conhecida ApiDemos]", async () => {
       try {
-        await n.mobile("changePermissions", {
-          permissions: CAMERA,
-          appPackage: PACKAGE,
-          action: "revoke",
-        });
+        await permissaoCamera("revoke");
         await n.open();
         await browser.pause(1000);
         const base = await n.baseline();
         await n.open(".graphics.CameraPreview");
         await browser.pause(3000);
-        n.csv.write("camera", {
-          caso: "permissao_negada",
-          repeticao: 0,
-          pid: await n.pid(),
-          crashes: (await n.crashes()) - base.crashes,
-        });
+        await registrarCamera("permissao_negada", 0, base);
         await n.alive(base, false);
       } finally {
-        await n.mobile("changePermissions", {
-          permissions: CAMERA,
-          appPackage: PACKAGE,
-          action: "grant",
-        });
+        await permissaoCamera("grant");
         await n.fecharDialogos();
         await n.open();
       }
@@ -171,14 +167,13 @@ describe("10 · Sensores e localização: usa e sobrevive às falhas", () => {
     });
 
     it("Texto digitado sobrevive à rotação da tela", async () => {
-      const texto = "texto preservado";
-      await n.digitarTexto(texto);
+      await n.digitarTexto();
       const base = await n.baseline();
       try {
         for (const orientacao of ["LANDSCAPE", "PORTRAIT"]) {
           await browser.setOrientation(orientacao);
           await browser.pause(1000);
-          await n.confirmaTexto(base, texto);
+          await n.confirmaTexto(base);
         }
       } finally {
         await browser.setOrientation("PORTRAIT");

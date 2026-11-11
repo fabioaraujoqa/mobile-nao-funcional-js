@@ -5,21 +5,14 @@
 // Appium:      mobile: getDisplayDensity · getElementRect · getevent -lt (via mobile: shell)
 // Clareza de fluxos e textos continua sendo teste com pessoas.
 const assert = require("node:assert/strict");
-const { Nfr } = require("../support/nfr");
+const { prepararSuite } = require("../support/suite");
+const { ITENS_DO_MENU } = require("../pages/apidemos");
 const { percentile } = require("../support/metrics");
 const { medir } = require("../support/indicadores");
-const { ondeRodar } = require("../support/ambiente");
 const L = require("../support/limits");
 
-const ITENS_DO_MENU = "id=android:id/text1";
-
 describe("2 · Usabilidade: fácil de usar", () => {
-  let n;
-  before(async () => {
-    n = new Nfr(browser, gestures);
-    await n.prepare();
-  });
-  beforeEach(ondeRodar);
+  const n = prepararSuite();
 
   it(`Itens do menu têm alvo de toque de pelo menos ${L.ALVO_TOQUE_MIN_DP} dp`, async () => {
     const dpi = await n.mobile("getDisplayDensity");

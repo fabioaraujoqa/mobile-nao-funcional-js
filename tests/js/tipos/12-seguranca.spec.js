@@ -6,8 +6,8 @@
 // Appium:      mobile: getPermissions · mobile: pullFile · mobile: shell (run-as, dumpsys package)
 // O Appium só ajuda a olhar. A análise de segurança de verdade usa ferramentas próprias (MobSF).
 const assert = require("node:assert/strict");
-const { Nfr, PACKAGE } = require("../support/nfr");
-const { ondeRodar } = require("../support/ambiente");
+const { PACKAGE } = require("../support/nfr");
+const { prepararSuite } = require("../support/suite");
 
 // Todas as permissões concedidas ao app (de instalação e de execução).
 // Uma versão nova pedindo outra reprova aqui até alguém revisar e incluir na lista.
@@ -30,12 +30,7 @@ const PERMISSOES_ESPERADAS = [
 const SEGREDO = /(token|password|passwd|senha|secret|api[_-]?key)/i;
 
 describe("12 · Segurança: dados protegidos", () => {
-  let n;
-  before(async () => {
-    n = new Nfr(browser, gestures);
-    await n.prepare();
-  });
-  beforeEach(ondeRodar);
+  const n = prepararSuite();
 
   it("Tem só as permissões esperadas", async () => {
     const concedidas = await n.mobile("getPermissions", {

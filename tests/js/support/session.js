@@ -3,6 +3,7 @@
 // (emulador, aparelho real, braço) é decidido por teste, em ambiente.js.
 const { execFileSync } = require("node:child_process");
 const { APPS } = require("./apps");
+const { env: ambiente } = require("./env");
 
 const uses = (specs, names) =>
   specs.some((spec) => names.some((name) => String(spec).includes(name)));
@@ -11,7 +12,7 @@ const uses = (specs, names) =>
 function resolveUdid(env = process.env) {
   if (env.UDID) return env.UDID;
   const out = execFileSync(
-    env.PYTHON || ".venv/bin/python",
+    env.PYTHON || ambiente.python,
     ["-c", "from taprobot.device import resolve_udid; print(resolve_udid())"],
     { encoding: "utf8" },
   );
@@ -46,4 +47,4 @@ function gestureOptions(specs) {
     : {};
 }
 
-module.exports = { capabilities, gestureOptions, resolveUdid };
+module.exports = { capabilities, gestureOptions, resolveUdid, TOQUE_FISICO };

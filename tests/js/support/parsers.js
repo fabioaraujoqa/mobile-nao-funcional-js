@@ -1,3 +1,8 @@
+// Leitura das saídas do adb (dumpsys, getevent, /proc). Funções puras, testadas no Jest.
+
+/** Texto de `mobile: shell`: string, ou { stdout } quando o Appium devolve objeto. */
+const saidaShell = (out) =>
+  typeof out === "string" ? out : String(out?.stdout ?? "");
 const num = (s, re) => {
   const m = s.match(re);
   return m ? Number(m[1]) : null;
@@ -108,6 +113,7 @@ function totalTicks(s) {
     : null;
 }
 module.exports = {
+  saidaShell,
   num,
   meminfo,
   gfxinfo,

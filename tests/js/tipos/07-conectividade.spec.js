@@ -5,16 +5,10 @@
 //              devolve o estado de rede que o aparelho tinha antes.
 // Appium:      mobile: setConnectivity · mobile: getConnectivity · mobile: networkSpeed
 // O ApiDemos não usa rede: aqui se verifica que o app sobrevive, não que os dados sincronizam.
-const { Nfr } = require("../support/nfr");
-const { ondeRodar } = require("../support/ambiente");
+const { prepararSuite } = require("../support/suite");
 
 describe("7 · Conectividade: aguenta rede ruim", () => {
-  let n;
-  before(async () => {
-    n = new Nfr(browser, gestures);
-    await n.prepare(".view.List1");
-  });
-  beforeEach(ondeRodar);
+  const n = prepararSuite(".view.List1");
 
   /** Executa `acao` e devolve Wi-Fi, dados e modo avião ao estado anterior. */
   async function comRedeRestaurada(acao) {

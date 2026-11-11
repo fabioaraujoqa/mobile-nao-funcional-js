@@ -1,26 +1,40 @@
+// Comandos adb (via `mobile: shell`) e medições do ApiDemos para os testes de tipos/.
 const assert = require("node:assert/strict");
 const p = require("./parsers");
 const { Csv } = require("./csv");
 const { APPS, resourceId } = require("./apps");
+const L = require("./limits");
 const PACKAGE = APPS.apidemos.package;
 const SAVED = resourceId("apidemos", "saved");
+/** Texto digitado antes de uma interrupção, que precisa continuar na tela depois dela. */
+const TEXTO_PRESERVADO = "texto preservado";
 
-// Comandos adb (via `mobile: shell`) e medições do ApiDemos para os não funcionais.
 class Nfr {
+  /**
+   * Sem argumentos, usa os globais do WebdriverIO (`browser` e `gestures`) na hora do uso:
+   * assim o spec pode criar o Nfr ao carregar, antes de a sessão existir.
+   */
   constructor(driver, gestures) {
-    this.driver = driver;
-    this.gestures = gestures;
+    this._driver = driver;
+    this._gestures = gestures;
     this.csv = new Csv();
     this.previous = null;
     this.touchLog = `/data/local/tmp/nfr_getevent_${Date.now()}.log`;
+  }
+  get driver() {
+    return this._driver ?? global.browser;
+  }
+  get gestures() {
+    return this._gestures ?? global.gestures;
   }
   mobile(command, args = {}) {
     return this.driver.execute(`mobile: ${command}`, args);
   }
   async shell(command) {
     try {
-      const out = await this.mobile("shell", { command, timeout: 30000 });
-      return typeof out === "string" ? out : out.stdout || "";
+      return p.saidaShell(
+        await this.mobile("shell", { command, timeout: 30000 }),
+      );
     } catch (e) {
       if (String(e).includes("adb_shell"))
         throw Error(
@@ -32,6 +46,40 @@ class Nfr {
   async open(activity = APPS.apidemos.activity) {
     const out = await this.shell(`am start -W -n ${PACKAGE}/${activity}`);
     if (/Error|Exception/.test(out)) throw Error(out);
+  }
+  /**
+   * Muda uma configuração do Android (`settings put`), roda `acao` e devolve o valor
+   * anterior, mesmo se a ação falhar. Valor anterior "null" = configuração apagada.
+   */
+  async comConfiguracao(namespace, chave, valor, acao, { pausaMs = 0 } = {}) {
+    const antes = (
+      await this.shell(`settings get ${namespace} ${chave}`)
+    ).trim();
+    try {
+      await this.shell(`settings put ${namespace} ${chave} ${valor}`);
+      if (pausaMs) await this.driver.pause(pausaMs);
+      return await acao();
+    } finally {
+      await this.shell(
+        antes === "null"
+          ? `settings delete ${namespace} ${chave}`
+          : `settings put ${namespace} ${chave} ${antes}`,
+      );
+      if (pausaMs) await this.driver.pause(pausaMs);
+    }
+  }
+  /**
+   * Compara a tela com a referência deste aparelho (@wdio/visual-service). "Localização do
+   * ponteiro" e "Mostrar toques" (opções do desenvolvedor, úteis com o braço) desenham por
+   * cima da tela: ficam desligadas só durante a captura.
+   */
+  async compararTela(nome, maxPct = L.VISUAL_DIFERENCA_MAX_PCT) {
+    await this.comConfiguracao("system", "pointer_location", 0, () =>
+      this.comConfiguracao("system", "show_touches", 0, async () => {
+        await this.driver.pause(500);
+        await expect(this.driver).toMatchScreenSnapshot(nome, maxPct);
+      }),
+    );
   }
   /** Fecha diálogos do sistema que cobririam os próximos testes, inclusive "o app parou". */
   async fecharDialogos() {
@@ -80,7 +128,7 @@ class Nfr {
       );
   }
   /** Abre o SaveRestoreState e digita um texto que deve sobreviver às interrupções. */
-  async digitarTexto(text) {
+  async digitarTexto(text = TEXTO_PRESERVADO) {
     await this.open(".app.SaveRestoreState");
     const el = await this.driver.$(SAVED);
     await el.waitForDisplayed();
@@ -92,14 +140,14 @@ class Nfr {
     return el.getText();
   }
   /** O app continua vivo, na frente, e o texto digitado não se perdeu. */
-  async confirmaTexto(base, text) {
+  async confirmaTexto(base, text = TEXTO_PRESERVADO) {
     await this.alive(base);
     assert.equal(await this.textoDigitado(), text, "Texto digitado se perdeu");
   }
   async scroll(direction = 1) {
-    const { width, height } = await this.driver.getWindowSize();
     if (!this.gestures)
-      throw Error("Nfr sem gestures: use new Nfr(browser, gestures)");
+      throw Error("Nfr sem gestures (global ou no construtor)");
+    const { width, height } = await this.driver.getWindowSize();
     await this.gestures.swipe(
       width / 2,
       height * (0.5 + 0.3 * direction),
@@ -198,4 +246,4 @@ class Nfr {
     };
   }
 }
-module.exports = { Nfr, PACKAGE };
+module.exports = { Nfr, PACKAGE, TEXTO_PRESERVADO };

@@ -1,12 +1,14 @@
+// Gestos dos testes: por software (Appium), pelo braço (servidor HTTP) ou simulado
+// (o servidor não move a P1S e o gesto também é feito por software).
 const { RobotClient } = require("./robot-client");
-const enabled = (v) =>
-  ["true", "1", "sim", "yes", "on"].includes(String(v).toLowerCase());
+const { env } = require("./env");
+
 class Gestures {
   constructor(
     driver,
     {
-      robot = enabled(process.env.ROBO),
-      simulated = enabled(process.env.SIMULADO),
+      robot = env.robo,
+      simulated = env.simulado,
       client = new RobotClient(),
     } = {},
   ) {
@@ -22,20 +24,25 @@ class Gestures {
       throw Error("Servidor sem confirmação de contato");
     this.prepared = true;
   }
-  async center(selector) {
+  /** Elemento visível (espera até o waitforTimeout do wdio.conf). */
+  async visible(selector) {
     const el = await this.driver.$(selector);
-    await el.waitForDisplayed({ timeout: 10000 });
+    await el.waitForDisplayed();
+    return el;
+  }
+  async center(selector) {
+    const el = await this.visible(selector);
     const { x, y } = await el.getLocation(),
       { width, height } = await el.getSize();
     return [x + width / 2, y + height / 2];
   }
+  /** Por software quando não há braço ou quando o braço é simulado. */
+  get software() {
+    return !this.robot || this.simulated;
+  }
   async click(selector) {
     if (this.robot) await this.client.tap(...(await this.center(selector)));
-    if (!this.robot || this.simulated) {
-      const el = await this.driver.$(selector);
-      await el.waitForDisplayed({ timeout: 10000 });
-      await el.click();
-    }
+    if (this.software) await (await this.visible(selector)).click();
   }
   async action(x1, y1, x2, y2, duration = 0.8, hold = 0) {
     const actions = [
@@ -71,13 +78,11 @@ class Gestures {
   }
   async tap(x, y) {
     if (this.robot) await this.client.tap(x, y);
-    if (!this.robot || this.simulated)
-      await this.action(x, y, null, null, 0, 0.1);
+    if (this.software) await this.action(x, y, null, null, 0, 0.1);
   }
   async swipe(x1, y1, x2, y2, duration = 0.8, hold = 0) {
     if (this.robot) await this.client.swipe(x1, y1, x2, y2, duration, hold);
-    if (!this.robot || this.simulated)
-      await this.action(x1, y1, x2, y2, duration, hold);
+    if (this.software) await this.action(x1, y1, x2, y2, duration, hold);
   }
   async drag(from, to) {
     await this.swipe(
@@ -91,4 +96,4 @@ class Gestures {
     if (this.robot && this.prepared) await this.client.park();
   }
 }
-module.exports = { Gestures, enabled };
+module.exports = { Gestures };

@@ -40,3 +40,16 @@ test("wdio.conf aplica as capabilities da sessão", () => {
     delete process.env.UDID;
   }
 });
+test("wdio.conf separa longos, rápidos, braço e um tipo por nome", () => {
+  const nomes = (s) => config.suites[s].map((f) => f.split("/").pop());
+  expect(nomes("longos")).toEqual([
+    "05-resistencia.spec.js",
+    "06-bateria-temperatura.spec.js",
+  ]);
+  expect(config.suites.rapidos).toHaveLength(10);
+  expect(nomes("braco")).toEqual([
+    "01-funcional.spec.js",
+    "02-usabilidade.spec.js",
+  ]);
+  expect(nomes("seguranca")).toEqual(["12-seguranca.spec.js"]);
+});

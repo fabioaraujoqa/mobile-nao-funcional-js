@@ -6,23 +6,18 @@
 // Appium:      mobile: activateApp · mobile: queryAppState · mobile: sendTrimMemory ·
 //              mobile: shell (settings always_finish_activities)
 const assert = require("node:assert/strict");
-const { Nfr, PACKAGE } = require("../support/nfr");
-const { ondeRodar } = require("../support/ambiente");
+const { PACKAGE } = require("../support/nfr");
+const { prepararSuite } = require("../support/suite");
 
-const TEXTO = "texto preservado",
-  OUTRO_APP = "com.android.settings";
+const OUTRO_APP = "com.android.settings";
 // queryAppState: 3 = rodando em segundo plano, 4 = na frente
 const SEGUNDO_PLANO = 3;
 
 describe("9 · Concorrência: convive com outros apps", () => {
-  let n, base;
-  before(async () => {
-    n = new Nfr(browser, gestures);
-    await n.prepare();
-  });
-  beforeEach(ondeRodar);
+  const n = prepararSuite();
+  let base;
   beforeEach(async () => {
-    await n.digitarTexto(TEXTO);
+    await n.digitarTexto();
     base = await n.baseline();
   });
 
@@ -39,7 +34,7 @@ describe("9 · Concorrência: convive com outros apps", () => {
 
   it("Outro app por cima e volta sem perder o texto", async () => {
     await outroAppPorCima();
-    await n.confirmaTexto(base, TEXTO);
+    await n.confirmaTexto(base);
   });
 
   it("Aviso de memória crítica não perde o texto", async () => {
@@ -48,21 +43,18 @@ describe("9 · Concorrência: convive com outros apps", () => {
       level: "RUNNING_CRITICAL",
     });
     await browser.pause(2000);
-    await n.confirmaTexto(base, TEXTO);
+    await n.confirmaTexto(base);
   });
 
   it("Com 'Não manter atividades', sair e voltar não perde o texto", async () => {
-    const antes = (
-      await n.shell("settings get global always_finish_activities")
-    ).trim();
-    try {
-      await n.shell("settings put global always_finish_activities 1");
-      await outroAppPorCima();
-      await n.confirmaTexto(base, TEXTO);
-    } finally {
-      await n.shell(
-        `settings put global always_finish_activities ${antes === "1" ? 1 : 0}`,
-      );
-    }
+    await n.comConfiguracao(
+      "global",
+      "always_finish_activities",
+      1,
+      async () => {
+        await outroAppPorCima();
+        await n.confirmaTexto(base);
+      },
+    );
   });
 });

@@ -16,7 +16,6 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
-graficos = ["matplotlib>=3.7"]
 
 [tool.setuptools.packages.find]
 include = ["taprobot*", "soak*", "tools*"]

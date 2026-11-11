@@ -4,20 +4,15 @@
 // Onde rodar:  emulador (só referência) e mesa (valores reais).
 // Appium:      mobile: shell (am start -W · dumpsys gfxinfo)
 // Fora daqui:  tempo do backend sob carga (ferramenta de carga no servidor).
-const { Nfr, PACKAGE } = require("../support/nfr");
+const { PACKAGE } = require("../support/nfr");
+const { prepararSuite } = require("../support/suite");
 const { gfxinfo } = require("../support/parsers");
 const { percentile } = require("../support/metrics");
 const { medir } = require("../support/indicadores");
-const { ondeRodar } = require("../support/ambiente");
 const L = require("../support/limits");
 
 describe("4 · Performance: responde rápido", () => {
-  let n;
-  before(async () => {
-    n = new Nfr(browser, gestures);
-    await n.prepare();
-  });
-  beforeEach(ondeRodar);
+  const n = prepararSuite();
 
   for (const [modo, estado, chave] of [
     ["frio", "COLD", "FRIO"],

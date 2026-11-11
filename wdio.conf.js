@@ -1,33 +1,38 @@
-// Configuração WebdriverIO. Regras de aparelho e app ficam em tests/js/support/session.js.
+// Configuração WebdriverIO. Regras de aparelho e app ficam em tests/js/support/session.js;
+// parâmetros por variável de ambiente, em tests/js/support/env.js.
 const path = require("node:path");
-const { mkdirSync } = require("node:fs");
+const fs = require("node:fs");
+const { execFileSync } = require("node:child_process");
 const { Gestures } = require("./tests/js/support/gestures");
 const session = require("./tests/js/support/session");
 const indicadores = require("./tests/js/support/indicadores");
-const { execFileSync } = require("node:child_process");
+const { env } = require("./tests/js/support/env");
 
-const appium = new URL(process.env.APPIUM_URL || "http://127.0.0.1:4723");
-const resultsDir = process.env.RESULTS_DIR || "results/wdio";
+const appium = new URL(env.appiumUrl);
+const resultsDir = env.resultados;
 const root = "./tests/js";
-// Um arquivo por tipo de teste, na ordem da apresentação "Tipos de testes mobile".
-const TIPOS = [
-  "01-funcional",
-  "02-usabilidade",
-  "03-acessibilidade",
-  "04-performance",
-  "05-resistencia",
-  "06-bateria-temperatura",
-  "07-conectividade",
-  "08-interrupcao",
-  "09-concorrencia",
-  "10-sensores-localizacao",
-  "11-compatibilidade",
-  "12-seguranca",
-].map((tipo) => `${root}/tipos/${tipo}.spec.js`);
+
+// Um arquivo por tipo de teste (01-funcional … 12-seguranca), na ordem da apresentação.
+const TIPOS = fs
+  .readdirSync(path.join(__dirname, root, "tipos"))
+  .filter((f) => /^\d{2}-.+\.spec\.js$/.test(f))
+  .sort()
+  .map((f) => `${root}/tipos/${f}`);
+const nomeDoTipo = (spec) => path.basename(spec).slice(3, -".spec.js".length);
+// Longos (soak, bateria) têm [longo] no título e duram DURACAO_MIN.
+const longo = (spec) =>
+  fs.readFileSync(path.join(__dirname, spec), "utf8").includes("[longo]");
+
 const suites = {
+  tipos: TIPOS,
   funcional: TIPOS.slice(0, 1),
   nfr: TIPOS.slice(1),
-  tipos: TIPOS,
+  rapidos: TIPOS.filter((s) => !longo(s)),
+  longos: TIPOS.filter(longo),
+  // Os tipos que tocam a tela como o usuário: com ROBO=true, o toque é do braço.
+  braco: TIPOS.filter((s) => session.TOQUE_FISICO.some((t) => s.includes(t))),
+  // Um tipo só pelo nome: --suite resistencia, --suite seguranca …
+  ...Object.fromEntries(TIPOS.map((s) => [nomeDoTipo(s), [s]])),
   addnumber: [`${root}/outros-apps/addnumber.spec.js`],
 };
 
@@ -109,7 +114,7 @@ exports.config = {
       { duracaoMs: duration, erro: pulado ? "" : error },
     );
     if (passed || pulado) return;
-    mkdirSync(resultsDir, { recursive: true });
+    fs.mkdirSync(resultsDir, { recursive: true });
     const name = test.title.replace(/[^\w-]+/g, "_").slice(0, 60);
     await browser.saveScreenshot(
       path.join(resultsDir, `${Date.now()}_${name}.png`),

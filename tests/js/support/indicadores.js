@@ -7,6 +7,9 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { limit } = require("./metrics");
+const { linhaCsv } = require("./csv");
+const { saidaShell } = require("./parsers");
+const { env } = require("./env");
 
 const CONTEXTO = [
   "rodada",
@@ -37,35 +40,30 @@ const COLUNAS = {
   ],
 };
 
-const escape = (v) => `"${String(v ?? "").replaceAll('"', '""')}"`;
 const estado = { contexto: {}, teste: "" };
 
 function pasta() {
-  return path.join(process.env.RESULTS_DIR || "results/wdio", "indicadores");
+  return path.join(env.resultados, "indicadores");
 }
 
 function anexar(nome, campos) {
   const colunas = COLUNAS[nome];
   const arquivo = path.join(pasta(), `${nome}.csv`);
   fs.mkdirSync(pasta(), { recursive: true });
-  if (!fs.existsSync(arquivo))
-    fs.writeFileSync(arquivo, colunas.map(escape).join(",") + "\n");
+  if (!fs.existsSync(arquivo)) fs.writeFileSync(arquivo, linhaCsv(colunas));
   const linha = {
     data_hora: new Date().toISOString(),
     ...estado.contexto,
     ...campos,
   };
-  fs.appendFileSync(
-    arquivo,
-    colunas.map((c) => escape(linha[c])).join(",") + "\n",
-  );
+  fs.appendFileSync(arquivo, linhaCsv(colunas, linha));
   return arquivo;
 }
 
 /** Id da rodada: o mesmo para todos os specs de uma execução do wdio. */
-function rodadaId(env = process.env) {
+function rodadaId() {
   return (
-    env.RODADA_ID || new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")
+    env.rodada || new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")
   );
 }
 
@@ -79,7 +77,7 @@ async function iniciar(driver, spec) {
     .execute("mobile: shell", {
       command: `dumpsys package ${app} | grep -m1 versionName`,
     })
-    .then((out) => String(out?.stdout ?? out).match(/versionName=(\S+)/)?.[1])
+    .then((out) => saidaShell(out).match(/versionName=(\S+)/)?.[1])
     .catch(() => null);
   const arquivo = path.basename(String(spec));
   estado.contexto = {
