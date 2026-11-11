@@ -1,61 +1,146 @@
-Atualize a minha apresentação "Tipos de testes mobile" com os resultados reais do projeto de automação. Mantenha o visual, a ordem dos 12 tipos e o tom atual. Mude só o conteúdo descrito abaixo. Não invente números: use apenas os que estão aqui. Onde eu indicar [PRINT], deixe um espaço reservado para eu colar uma imagem do painel.
+Anexei a minha apresentação "Tipos de testes mobile" (30 slides). Quero que você edite o próprio arquivo e me devolva o .pptx atualizado.
 
-## Contexto do projeto (para um slide de abertura ou de método)
+Regras:
+- Mantenha o design: cores, fontes, tamanhos, posições, ícones e o layout de cada slide. Mude só os textos indicados abaixo e crie os slides novos copiando o layout de um slide existente, como eu indico.
+- Use exatamente os números e textos daqui. Não invente dados.
+- Não mexa nos slides marcados como "sem mudança".
+- Os selos do quadro EXEMPLO têm três tipos: "DADO REAL DA SUÍTE" (borda verde), "EXEMPLO ILUSTRATIVO" e "CASE DE CAMPO". Quando eu pedir para trocar o selo, copie o estilo do selo equivalente de outro slide.
+- Nas faixas ONDE RODAR e FUNCIONA EM, "●" é a caixa destacada e "○" é a apagada. Para mudar, copie o estilo da caixa equivalente.
+- Se um texto novo não couber na caixa, encurte a frase sem mudar o sentido. Não diminua a fonte.
+- No fim, renumere o rodapé "N / total" de todos os slides e me diga em uma lista o que mudou em cada slide.
 
-- App testado: ApiDemos 6.0.18, app de exemplo do Android com telas prontas para testes.
-- Aparelhos: Moto G06 (aparelho real, Android 15, tela 720×1640) e emulador Android 14 (1080×2400).
-- Ferramentas: WebdriverIO 10 com Mocha, Appium 3 com o driver UiAutomator2, comandos `mobile:` do Appium e `adb shell`. Teste visual com @wdio/visual-service.
-- Um braço robótico (impressora 3D adaptada com uma caneta touch) faz toques físicos reais na tela. Os testes podem tocar por software ou pelo braço.
-- Organização: um arquivo de teste por tipo (01-funcional até 12-seguranca), cada um com o objetivo escrito no topo.
-- Cada teste traz no título onde roda: [emulador], [aparelho_real] ou [braco]. Fora do ambiente certo, ele é pulado e o motivo fica registrado.
-- Falhas do próprio ApiDemos ficam marcadas como "falha conhecida" e continuam reprovando. Não viram aprovação.
-- Toda rodada grava indicadores em CSV (aparelho, versão do Android, versão do app, commit), que alimentam o painel de resultados.
-- Resultado geral (última rodada de cada tipo):
-  - Aparelho real: 25 de 28 testes passaram. Reprovaram 2 falhas conhecidas do ApiDemos e o soak. 8 foram pulados por serem de outro ambiente.
-  - Emulador: 28 de 31 passaram. Reprovaram só as 3 falhas conhecidas. 3 foram pulados.
-  [PRINT: topo do painel e a tabela "Os 12 tipos de teste, por aparelho"]
+Contexto, só para você entender (não precisa virar slide): a suíte de testes roda no ApiDemos 6.0.18 com WebdriverIO + Appium (UiAutomator2), num Moto G06 (Android 15) e num emulador Android 14. Os números são das rodadas de 10 e 11/11/2026.
 
-## Um slide (ou bloco) por tipo: como testamos, o que rodou e o resultado
+---
 
-1. Funcional. Como: page objects e seletores por accessibility id e resource-id. Rodou: navegar até Views e voltar; arrastar um ponto sobre outro e conferir "Dropped!". Resultado: 2 de 2 no aparelho real e no emulador. Com o braço, o arrastar ainda não foi validado na tela.
+## Slides 1 a 4: sem mudança
 
-2. Usabilidade. Como: tamanho de cada item do menu (getElementRect) convertido para dp com mobile: getDisplayDensity; latência do toque físico até o primeiro quadro novo (getevent + dumpsys gfxinfo). Resultado: menor alvo de toque de 48 dp, exatamente o mínimo recomendado. A latência com o braço ainda não foi medida.
+## Slide 5 (O comando é do Appium, não da linguagem): sem mudança
 
-3. Acessibilidade. Como: fonte em 130% (font_scale) com o menu inteiro na tela e comparação visual; content-desc em todos os itens para o leitor de tela; modo escuro com mobile: setUiMode. Resultado: 3 de 3 nos dois aparelhos.
+## Slide 6 (Teste funcional)
+Texto do quadro EXEMPLO (o selo continua "DADO REAL DA SUÍTE"):
+"No ApiDemos, o teste arrasta um ponto sobre outro e confere que o app mostra "Dropped!". Passou no G06 e no emulador."
+Motivo: o arrastar foi validado com toque por software. Com o braço robótico, ainda não.
 
-4. Performance. Como: am start -W, 10 aberturas a frio e mornas (p50 e p90); dumpsys gfxinfo depois de 20 rolagens para medir jank. Resultado na última rodada:
-   - Aparelho real: abertura a frio p50 857 ms (limite 2.000), morna p50 258 ms (limite 1.000), jank 0%.
-   - Emulador: frio p50 849 ms, morno p50 224 ms, jank 21,9% (limite 25%).
-   - Mensagem: o emulador varia muito com a máquina (antes de reiniciar o emulador, deu 3,8 s e 96% de jank). Para comparar versões do app, use aparelho real.
-   [PRINT: gráfico "Desempenho: aparelho real × emulador"]
+## Slide 7 (Funcional no Appium): sem mudança
 
-5. Resistência (soak). Como: laço por três telas durante 2 h; a cada ciclo lê memória (dumpsys meminfo), threads, CPU e temperatura; o crescimento da memória é a inclinação de uma regressão linear. Resultado no Moto G06: REPROVADO. A memória cresceu 38,5 MB/h (limite 20 MB/h), de 58 para 139 MB, em linha reta, sem estabilizar. Sem crash, 46 threads no máximo, 33 °C. Uma rodada anterior de quase 7 h (05/11) mostrou o mesmo vazamento (~33 MB/h). O vazamento é do ApiDemos: o teste fez o papel dele.
-   [PRINT: gráfico "Soak: memória ao longo de 2 h"]
+## Slide 8 (Teste de usabilidade)
+- Troque o selo para "DADO REAL DA SUÍTE" e o texto do quadro EXEMPLO para:
+  "Os itens do menu do ApiDemos têm exatamente 48 dp no G06 e no emulador: no limite mínimo recomendado pelo Android."
+- ONDE RODAR: ● Emulador ● Mesa ● Campo (o tamanho dos alvos também é medido no emulador).
 
-6. Bateria e temperatura. Como: aparelho fora da tomada por 1 h, adb pelo Wi-Fi, tela acesa com animação contínua, leitura de dumpsys battery e thermalservice a cada 5 min. Resultado: APROVADO. Consumo de 3,3%/h (limite 25%/h), bateria de 100% para 97%, temperatura máxima de 34 °C (limite 45 °C). Ressalva: o nível da bateria só muda de 1 em 1%, então rodadas curtas são aproximadas.
-   [PRINT: gráficos "Bateria e temperatura: 1 h fora da tomada"]
+## Slide 9 (Usabilidade no Appium)
+O exemplo do getevent está errado: getevent não termina sozinho e trava o comando. Troque as duas últimas linhas do bloco de código por:
+```
+// toque físico do braço, com horário (em segundo plano)
+mobile: shell
+{ "command": "sh", "args": ["-c",
+  "nohup getevent -lt /dev/input/eventN > /data/local/tmp/toque.log &"] }
+```
+Acrescente ao quadro ATENÇÃO, depois do texto atual: "getevent fica rodando: grave em arquivo e leia depois."
 
-7. Conectividade. Como: mobile: setConnectivity (Wi-Fi, dados, modo avião) e mobile: networkSpeed (gsm até lte). Rodou: perda e volta da rede e velocidades no emulador; troca de Wi-Fi para dados nos dois. Resultado: 3 de 3 no emulador, 1 de 1 no aparelho real.
+## Slide 10 (Teste de acessibilidade)
+Troque o selo para "DADO REAL DA SUÍTE" e o texto do quadro EXEMPLO para:
+"Com a fonte em 130%, o menu do ApiDemos continua inteiro na tela, todo item tem rótulo para o leitor de tela e o modo escuro não derruba o app."
 
-8. Interrupção. Como: mobile: gsmCall (chamada), sendSms, backgroundApp e lock, sempre com um texto digitado que precisa continuar na tela. Resultado: 4 de 4 no emulador, 1 de 1 (segundo plano) no aparelho real. Chamada, SMS e bloqueio só no emulador (o aparelho real tem PIN e não recebe chamada simulada).
+## Slide 11 (Acessibilidade no Appium)
+No quadro ATENÇÃO, troque "Volte font_scale para 1.0 no fim do teste." por "No fim do teste, volte font_scale ao valor que estava antes." O resto fica igual.
 
-9. Concorrência. Como: outro app por cima (mobile: activateApp e queryAppState), aviso de memória crítica (mobile: sendTrimMemory) e a opção "Não manter atividades". Resultado: 3 de 3 nos dois aparelhos, com o texto digitado preservado.
+## Slide 12 (Teste de performance)
+Texto do quadro EXEMPLO (o selo continua "DADO REAL DA SUÍTE"):
+"Início frio no Moto G06: p50 de 857 ms (limite 2.000 ms). Jank na rolagem: 0%. No emulador, o jank chegou a 21,9%."
 
-10. Sensores e localização. Como: mobile: setGeolocation (rota e salto São Paulo → Paris), GPS desligado, câmera aberta e fechada 10 vezes, câmera sem permissão (mobile: changePermissions), sensores simulados (mobile: sensorSet) e rotação da tela. Resultado: 5 de 6 no aparelho real e 4 de 6 no emulador. As falhas são do ApiDemos: o app cai quando a permissão da câmera é negada (nos dois) e a tela de sensores cai ao abrir (emulador).
+## Slide 13 (Performance no Appium)
+Na primeira chamada do bloco de código, acrescente "-S" aos argumentos para que ela meça o início frio:
+`"args": ["start", "-W", "-S", "-n", "io.appium.android.apis/.ApiDemos"]`
+No quadro ATENÇÃO, troque "Para início frio, feche o app antes (am force-stop)." por "-S encerra o app antes de abrir (início frio). Sem ele, a medida é de início morno."
 
-11. Compatibilidade. Como: mobile: deviceInfo e comparação visual de cada tela com a referência do mesmo aparelho (até 0,5% de diferença, barras do sistema escondidas). Resultado: 3 de 3 nos dois aparelhos. Próximo passo, só citado no discurso: levar a mesma estrutura para iOS (iPhone), onde o braço robótico funciona igual, porque toca qualquer tela.
+## Slide 14 (Teste de resistência)
+Texto do quadro EXEMPLO (o selo continua "DADO REAL DA SUÍTE"):
+"Reprovado: a memória cresceu 38,5 MB/h no G06 (limite 20 MB/h). Em 2 h, foi de 58 para 139 MB. Numa rodada de 6 h 46 min, chegou a 300 MB. Nenhum crash."
+Motivo: o texto atual não diz que o teste reprovou.
 
-12. Segurança. Como: mobile: getPermissions comparado com a lista esperada; busca de senha ou token em texto aberto nos arquivos internos (shared_prefs); flags do build. Resultado: 2 de 3. O build é depurável (DEBUGGABLE), uma falha conhecida porque o ApiDemos é build de debug. Análise de código e de tráfego fica para ferramentas próprias, como o MobSF.
+## Slide 15 (Resistência no Appium): sem mudança
 
-## Correções em slides que já existem
+## Slide 16 (Teste de bateria e temperatura)
+Mantenha o case de campo e acrescente uma segunda frase ao quadro EXEMPLO:
+"Na mesa, o G06 gastou 3,3% por hora e chegou a 34 °C, em 1 h fora da tomada com a tela sempre acesa."
 
-- Se algum slide disser que o soak passou, corrija: ele reprovou nas duas rodadas (vazamento de memória do ApiDemos).
-- Se algum slide disser que o braço já arrasta itens na tela ou já mediu latência, troque por "próximo passo": hoje o arrastar foi validado por software, e a latência com o braço ainda não foi medida.
-- Os números antigos do Moto G06 (abertura a frio p50 de 788 ms e jank de 0,13%, de 05/11) estavam certos para aquela rodada. Se preferir números atuais, use os da seção 4.
+## Slide 17 (Bateria no Appium)
+No quadro ATENÇÃO, troque o texto por:
+"O cabo USB carrega o aparelho. Para medir bateria de verdade, use o adb por Wi-Fi: adb tcpip 5555, tire o cabo e rode adb connect <ip>:5555."
 
-## Slide final sugerido: próximos passos
+## Slide 18 (Teste de conectividade)
+Mantenha o case de campo e acrescente uma segunda frase ao quadro EXEMPLO:
+"Na suíte, a troca Wi-Fi → dados passou no G06 e no emulador."
 
-- Rodar o arrastar e a latência com o braço na tela, depois da calibração.
-- Testar notificações chegando com o app aberto.
-- Mais aparelhos na comparação visual, inclusive iPhone.
+## Slide 19 (Conectividade no Appium): sem mudança
+
+## Slide 20 (Teste de interrupção)
+Texto do quadro EXEMPLO (o selo continua "DADO REAL DA SUÍTE"):
+"Chamada, SMS, segundo plano e bloqueio de tela no emulador: 4 de 4 passaram e o texto digitado foi preservado."
+
+## Slide 21 (Interrupção no Appium)
+Acrescente ao quadro ATENÇÃO, depois do texto atual: "mobile: lock só desbloqueia sozinho em aparelho sem PIN."
+
+## Slide 22 (Teste de concorrência)
+- Mantenha o case de campo e acrescente uma segunda frase ao quadro EXEMPLO:
+  "Na suíte, outro app por cima, aviso de memória crítica e "Não manter atividades": 3 de 3 nos dois aparelhos, sem perder o texto."
+- ONDE RODAR: ● Emulador ● Mesa ● Campo.
+
+## Slide 23 (Concorrência no Appium): sem mudança
+
+## Slide 24 (Teste de sensores e localização)
+Texto do quadro EXEMPLO (o selo continua "DADO REAL DA SUÍTE"):
+"Sem permissão de câmera, o ApiDemos cai (no G06 e no emulador). A tela de sensores cai assim que abre (emulador). O teste encontra e continua reprovando."
+
+## Slide 25 (Sensores no Appium): sem mudança
+
+## Slide 26 (Teste de compatibilidade)
+Texto do quadro EXEMPLO (o selo continua "DADO REAL DA SUÍTE"):
+"Cada tela é comparada com a foto de referência do próprio aparelho (@wdio/visual-service): 3 de 3 no G06 e no emulador."
+
+## Slide 27 (Compatibilidade no Appium)
+Acrescente ao fim do bloco de código:
+```
+// comparação visual (@wdio/visual-service)
+await expect(browser).toMatchScreenSnapshot("inicio", 0.5)
+```
+Acrescente ao quadro ATENÇÃO, depois do texto atual: "Cada aparelho tem a sua referência. A 1ª rodada grava, as próximas comparam."
+
+## Slide 28 (Teste de segurança)
+Mantenha o exemplo ilustrativo e acrescente uma segunda frase ao quadro EXEMPLO:
+"Na suíte: nenhuma senha ou token em texto aberto, mas o build do ApiDemos é depurável (falha conhecida)."
+
+## Slide 29 (Segurança no Appium): sem mudança
+
+---
+
+## Slides novos (entre o slide 29 e o atual slide 30, nesta ordem)
+
+Para os três, copie o layout de um slide "N O A P P I U M" (por exemplo, o slide 29): título grande, bloco escuro à esquerda e coluna à direita. Rótulo pequeno no topo: "N A P R Á T I C A".
+
+### Novo slide A. Título: "Como a suíte está organizada"
+Bloco da esquerda, em lista:
+- Um arquivo por tipo de teste: 01-funcional até 12-seguranca, com o objetivo escrito no topo.
+- Cada teste diz onde roda: [emulador], [aparelho_real] ou [braco]. Fora do lugar certo, ele é pulado e o motivo fica registrado.
+- Defeito do próprio app fica marcado como "falha conhecida" e continua reprovando.
+- Toda rodada grava indicadores: aparelho, versão do Android e do app, valor medido e limite.
+Coluna da direita, como "FERRAMENTAS": WebdriverIO 10 + Mocha · Appium 3 + UiAutomator2 · @wdio/visual-service · Braço robótico (impressora 3D + caneta touch).
+
+### Novo slide B. Título: "O resultado"
+Coluna da direita (como na "FUNCIONA EM"), em duas caixas:
+- "Aparelho real (G06): 25 de 28 passaram"
+- "Emulador: 28 de 31 passaram"
+Bloco da esquerda: deixe vazio, com o texto pequeno "[PRINT DO PAINEL: tabela dos 12 tipos]" no centro, para eu colar a imagem.
+Faixa de rodapé (estilo da faixa de citação do slide 2): "Reprovaram só as falhas conhecidas do ApiDemos e o soak, que achou um vazamento de memória."
+
+### Novo slide C. Título: "Próximos passos"
+Bloco da esquerda, em lista:
+- Braço robótico na tela: arrastar e medir a latência do toque físico.
+- Notificação chegando com o app aberto.
+- Mais aparelhos na comparação visual, inclusive iPhone: o braço toca qualquer tela.
 - Painel de indicadores atualizado a cada rodada.
+Coluna da direita: deixe vazia, com o texto pequeno "[PRINT DO PAINEL: gráfico do soak]".
+
+## Slide 30 (Para levar): sem mudança. Só o rodapé passa a ser o último número.
