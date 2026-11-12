@@ -34,6 +34,7 @@ const suites = {
   // Um tipo só pelo nome: --suite resistencia, --suite seguranca …
   ...Object.fromEntries(TIPOS.map((s) => [nomeDoTipo(s), [s]])),
   addnumber: [`${root}/outros-apps/addnumber.spec.js`],
+  demo: [`${root}/demo/controles-demo.spec.js`],
 };
 
 exports.config = {
