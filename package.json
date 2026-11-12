@@ -18,6 +18,8 @@
     "test:demo": "wdio run wdio.conf.js --suite demo",
     "test:demo-loop": "wdio run wdio.conf.js --suite demo-loop",
     "demo": "bash scripts/demo-loop.sh",
+    "conectar": ".venv/bin/python -m tools.reconfig --phone",
+    "preparar": "bash scripts/preparar.sh",
     "test:dry-run": "mocha --dry-run \"tests/js/{tipos,outros-apps}/*.spec.js\"",
     "check": "node scripts/check.js",
     "lint": "prettier --check \"tests/js/**/*.js\" \"scripts/*.js\" wdio.conf.js",

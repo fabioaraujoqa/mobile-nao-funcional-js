@@ -162,26 +162,36 @@ def main():
             )
         print(f"P1S encontrada em {ip}")
 
-    access_code = args.access_code
-    if not access_code:
-        access_code = input("Access code novo (tela da impressora > Rede): ").strip()
-    if not access_code:
-        sys.exit("sem access code, não dá para testar. Abortei (o IP não foi gravado).")
-
-    patch_config(path, ip=ip, access_code=access_code)
-    print(f"config.yaml atualizado: ip={ip}, access_code={access_code}")
+    # Só o IP muda ao trocar de rede; o access code segue o mesmo (ele só muda se
+    # você reativar o "Somente modo LAN"). Então grava o IP e tenta com o code atual.
+    patch_config(path, ip=ip, access_code=args.access_code)
+    code_atual = str(load_config(path, require_printer=False)["printer"].get("access_code") or "")
+    print(f"config.yaml atualizado: ip={ip}" + (f", access_code={args.access_code}" if args.access_code else " (access code mantido)"))
 
     cfg = load_config(path)  # recarrega já validado
     print("Testando a conexão com a P1S ...")
     ok = test_mqtt(cfg)
+
+    # Só pede um code novo se falhou com o atual (sinal de que o Modo LAN foi reativado).
+    if not ok and not args.access_code:
+        print(
+            "\nFalhou com o access code atual. Isso acontece se o 'Somente modo LAN' "
+            "foi desligado e religado na impressora (aí ela gera um code novo)."
+        )
+        novo = input("Access code novo (tela > Rede), ou Enter para abortar: ").strip()
+        if novo and novo != code_atual:
+            patch_config(path, access_code=novo)
+            cfg = load_config(path)
+            print("Testando de novo ...")
+            ok = test_mqtt(cfg)
 
     if args.phone:
         print("Procurando o celular ...")
         connect_phone(cfg)
 
     if not ok:
-        sys.exit("A conexão falhou — confira o access code na tela da impressora e rode de novo.")
-    print("Pronto. Já pode calibrar/rodar os testes.")
+        sys.exit("A conexão falhou. Confira o access code na tela da impressora (tela > Rede) e rode de novo.")
+    print("Pronto. Já pode rodar os testes (a calibração continua valendo se o celular não saiu do lugar).")
 
 
 if __name__ == "__main__":
