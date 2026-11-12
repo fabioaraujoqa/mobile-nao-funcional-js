@@ -35,6 +35,7 @@ const suites = {
   ...Object.fromEntries(TIPOS.map((s) => [nomeDoTipo(s), [s]])),
   addnumber: [`${root}/outros-apps/addnumber.spec.js`],
   demo: [`${root}/demo/controles-demo.spec.js`],
+  "demo-loop": [`${root}/demo/demo-loop.spec.js`],
 };
 
 exports.config = {
