@@ -19,8 +19,8 @@ function resolveUdid(env = process.env) {
   return out.trim().split("\n").at(-1);
 }
 
-function appFor(specs) {
-  return uses(specs, ["addnumber.spec"]) ? APPS.addnumber : APPS.apidemos;
+function appFor() {
+  return APPS.apidemos;
 }
 
 /** Capabilities que dependem do aparelho e do spec em execução. */
@@ -35,7 +35,7 @@ function capabilities(specs, env = process.env) {
 }
 
 // Tipos que podem usar o braço: os que tocam na tela como o usuário.
-const TOQUE_FISICO = ["01-funcional", "02-usabilidade", "addnumber.spec"];
+const TOQUE_FISICO = ["01-funcional", "02-usabilidade"];
 
 /**
  * Opções de Gestures por spec. Os tipos 03 a 12 medem o app, não o toque:

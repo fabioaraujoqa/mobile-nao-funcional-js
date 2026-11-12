@@ -11,7 +11,7 @@ Situação: ✅ coberto · ◐ parcial · ✗ não coberto
 
 | # | Tipo | Situação | Arquivo (`tests/js/tipos/`) | Roda em | Medido |
 |---|---|---|---|---|---|
-| 1 | Funcional | ✅ | `01-funcional` (+ `outros-apps/addnumber`) | emulador, mesa | navegação e arrastar/soltar passam |
+| 1 | Funcional | ✅ | `01-funcional` | emulador, mesa | navegação e arrastar/soltar passam |
 | 2 | Usabilidade | ◐ | `02-usabilidade` | emulador, mesa | alvos do menu com 48 dp no G06; latência pede o braço |
 | 3 | Acessibilidade | ✅ | `03-acessibilidade` | emulador, mesa | fonte 130%, rótulos e modo escuro passam |
 | 4 | Performance | ✅ | `04-performance` | emulador, mesa | G06: frio p50 772 ms, morno p50 195 ms, jank 0,22% |

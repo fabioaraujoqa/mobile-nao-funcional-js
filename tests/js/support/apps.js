@@ -7,11 +7,6 @@ const APPS = {
     activity: ".ApiDemos",
     apk: path.resolve(__dirname, "../../../apps/ApiDemos-debug.apk"),
   },
-  // Instalado à parte no aparelho: não há APK no repositório.
-  addnumber: {
-    package: "com.browserstack.addnumber",
-    activity: ".MainActivity",
-  },
 };
 
 /** Seletor WebdriverIO para um resource-id do app (`id=pacote:id/nome`). */

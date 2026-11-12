@@ -19,8 +19,8 @@ npm run test:dry-run                  # registra os cenários, sem executá-los
 wdio.conf.js                 configuração WebdriverIO (Appium, suítes, hooks)
 tests/js/
   tipos/                     um arquivo por tipo de teste (01-funcional … 12-seguranca)
-  outros-apps/               exemplo com outro app instalado à parte (AddNumber)
-  pages/                     page objects (ApiDemosPage, AddNumberPage)
+  demo/                      demos da apresentação (controles e loop com o braço)
+  pages/                     page objects (ApiDemosPage, ControlesPage)
   visual/referencia/         imagens de referência do teste visual, uma por aparelho
   support/
     env.js                   parâmetros por variável de ambiente (Appium, UDID, braço, saída)
@@ -87,7 +87,6 @@ npm run test:longos                   # só soak e bateria
 npm run test:braco                    # 01 e 02, os que tocam como o usuário
 npm run test:funcional                # tipo 1
 npm run test:mobile -- --suite concorrencia   # um tipo pelo nome
-npm run test:addnumber                # exige AddNumber instalado separadamente
 UDID=emulator-5554 npm run test:rapidos       # no emulador
 ```
 

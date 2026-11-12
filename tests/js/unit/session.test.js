@@ -8,11 +8,6 @@ test("ApiDemos instala o APK do repositório e respeita UDID explícito", () => 
   expect(caps["appium:appPackage"]).toBe("io.appium.android.apis");
   expect(caps["appium:app"]).toMatch(/apps\/ApiDemos-debug\.apk$/);
 });
-test("AddNumber usa o aplicativo instalado, sem APK", () => {
-  const caps = session.capabilities(["outros-apps/addnumber.spec.js"], env);
-  expect(caps["appium:appPackage"]).toBe("com.browserstack.addnumber");
-  expect(caps["appium:app"]).toBeUndefined();
-});
 test("só funcional e usabilidade usam o braço; os outros tipos, software", () => {
   const software = { robot: false, simulated: false };
   expect(session.gestureOptions(["/tipos/01-funcional.spec.js"])).toEqual({});

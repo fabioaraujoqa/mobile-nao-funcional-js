@@ -75,7 +75,6 @@ UDID=emulator-5554 npm run test:rapidos   # no emulador
 | `npm run test:longos` | soak e bateria; duram `DURACAO_MIN` (padrão 30 min) cada |
 | `npm run test:braco` | os tipos que tocam como o usuário (01 e 02); use com `ROBO=true` |
 | `npm run test:mobile -- --suite <nome>` | um tipo só: `funcional`, `usabilidade`, … `seguranca` |
-| `npm run test:addnumber` | exemplo com outro app, instalado à parte |
 | `npm run painel` | gera `results/wdio/painel.html`, que abre sem internet |
 | `npm test` | testes unitários (Jest), sem celular |
 | `npm run test:dry-run` | lista os cenários sem executar |
@@ -161,7 +160,7 @@ uma por aparelho. A primeira rodada num aparelho novo grava a referência; as se
 wdio.conf.js           WebdriverIO: Appium, suítes, hooks e indicadores
 tests/js/
   tipos/               um arquivo por tipo de teste (01-funcional … 12-seguranca)
-  outros-apps/         exemplo com outro app (AddNumber)
+  demo/                demos da apresentação (controles e loop)
   pages/               page objects
   support/             env, limites, sessão, gestos, adb (nfr.js), indicadores, parsers
   unit/                Jest, sem celular

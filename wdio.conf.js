@@ -33,7 +33,6 @@ const suites = {
   braco: TIPOS.filter((s) => session.TOQUE_FISICO.some((t) => s.includes(t))),
   // Um tipo só pelo nome: --suite resistencia, --suite seguranca …
   ...Object.fromEntries(TIPOS.map((s) => [nomeDoTipo(s), [s]])),
-  addnumber: [`${root}/outros-apps/addnumber.spec.js`],
   demo: [`${root}/demo/controles-demo.spec.js`],
   "demo-loop": [`${root}/demo/demo-loop.spec.js`],
 };
